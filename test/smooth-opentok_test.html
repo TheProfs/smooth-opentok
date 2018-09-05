@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+
+    <title>smooth-opentok test</title>
+
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="../../web-component-tester/browser.js"></script>
+
+    <link rel="import" href="../smooth-opentok.html">
+  </head>
+  <body>
+    <test-fixture id="basic">
+      <template>
+        <smooth-opentok></smooth-opentok>
+      </template>
+    </test-fixture>
+
+    <script>
+      suite('smooth-opentok', function() {
+        test('instantiating the element works', function() {
+          var element = fixture('basic');
+          assert.equal(element.is, 'smooth-opentok');
+        });
+      });
+    </script>
+  </body>
+</html>

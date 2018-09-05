@@ -1,2 +1,21 @@
-# smooth-opentok
-Opentok's API wrapped as a Polymer element for sane humans
+# \<smooth-opentok\>
+
+Opentok&#39;s API wrapped as a Polymer element for sane humans
+
+## Install the Polymer-CLI
+
+First, make sure you have the [Polymer CLI](https://www.npmjs.com/package/polymer-cli) installed. Then run `polymer serve` to serve your element locally.
+
+## Viewing Your Element
+
+```
+$ polymer serve
+```
+
+## Running Tests
+
+```
+$ polymer test
+```
+
+Your application is already set up to be tested via [web-component-tester](https://github.com/Polymer/web-component-tester). Run `polymer test` to run your application's test suite locally.

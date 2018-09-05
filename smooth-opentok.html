@@ -1,0 +1,34 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<!--
+`smooth-opentok`
+Opentok&#39;s API wrapped as a Polymer element for sane humans
+
+@demo demo/index.html
+-->
+
+<dom-module id="smooth-opentok">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+    </style>
+    <h2>Hello [[prop1]]!</h2>
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'smooth-opentok',
+
+      properties: {
+        prop1: {
+          type: String,
+          value: 'smooth-opentok',
+        },
+      },
+
+    });
+  </script>
+</dom-module>
