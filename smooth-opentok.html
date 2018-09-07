@@ -80,8 +80,8 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       },
 
       joinCall: function() {
-        const publisher = OT.initPublisher(this.$.hidden, {
-          videoSource: true,
+        this.publisher = OT.initPublisher(this.$.hidden, {
+          publishVideo: false,
           insertMode: 'append',
           width: '100%',
           height: '100%'
@@ -90,11 +90,15 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
         this.session.connect(this.credentials.token, err => {
           if (err) return this._handleRTCError(error)
 
-          this.session.publish(publisher, this._handleRTCError.bind(this))
+          this.session.publish(this.publisher, this._handleRTCError.bind(this))
         })
 
-        publisher.on('streamCreated', this._connectionStateChanged.bind(this))
-        publisher.on('streamDestroyed', this._connectionStateChanged.bind(this))
+        this.publisher.on('streamCreated', this._connectionStateChanged.bind(this))
+        this.publisher.on('streamDestroyed', this._connectionStateChanged.bind(this))
+      },
+
+      toggleVideo: function(flag) {
+        this.publisher.publishVideo(flag)
       },
 
       _connectionStateChanged: function() {
