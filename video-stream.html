@@ -1,0 +1,186 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../iron-icons/av-icons.html">
+
+<!--
+`video-stream`
+An individual video stream element
+
+@demo demo/index.html
+-->
+
+<dom-module id="video-stream">
+  <template>
+    <style>
+      :host {
+        position: relative;
+        display: inline-block;
+        max-width: 100%;
+        min-height: 120px;
+        background: #111;
+        text-align: center;
+        overflow: visible;
+      }
+
+      .resize-handle {
+        position: absolute;
+        width: 15px;
+        height: 15px;
+        bottom: 0;
+        right: 0;
+        background: #999;
+        z-index: 99;
+        cursor: nwse-resize;
+      }
+
+      .handle {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        padding-top: 40px;
+        height: calc(100% - 40px);
+        cursor: move;
+      }
+
+      .top-controls {
+        position: absolute;
+        background: #009688;
+        top: 0;
+        height: 40px;
+        width: 100%;
+        text-align: left;
+      }
+
+      #video {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+
+    <div id="resizeHandle" class="resize-handle"></div>
+    <div id="handle" class="handle" draggable="true">
+      <div class="top-controls">
+        <paper-icon-button
+          icon="aspect-ratio"
+          on-tap="_requestFullscreen">
+        </paper-icon-button>
+      </div>
+
+      <div
+        id="video"
+        ondragstart="event.preventDefault();"
+        draggable="true">
+      </div>
+    </div>
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'video-stream',
+
+      properties: {
+        stream: {
+          type: Object
+        },
+
+        dragging: {
+          type: Boolean,
+          value: false,
+          reflectToAttribute: true
+        }
+      },
+
+      ready: function() {
+        this._attachDragListeners()
+        this._attachResizeListeners()
+      },
+
+      attached: function() {
+        this.$.video.appendChild(this.stream.publisher.element)
+      },
+
+      setDownPoint: function({ x, y }) {
+        const bbox = this.getBoundingClientRect()
+        this.set('dragDownPoint', { x: x - bbox.x , y: y - bbox.y })
+      },
+
+      reset: function() {
+        this.removeAttribute('style')
+      },
+
+      resetPosition: function() {
+        this.style.position = 'inline-block'
+        this.style.left = `auto`
+        this.style.top = `auto`
+      },
+
+      setPosition: function({ x, y }) {
+        this.style.position = 'fixed'
+        this.style.left = `${x - this.dragDownPoint.x}px`
+        this.style.top = `${y - this.dragDownPoint.y}px`
+      },
+
+      _attachDragListeners: function() {
+        this.$.handle.domHost = this
+
+        this.addEventListener('dragstart', e => {
+          const bbox = this.getBoundingClientRect()
+
+          this.style.width = `${bbox.width}px`
+          this.style.height = `${bbox.height}px`
+        })
+
+        this.addEventListener('drag', e => {
+          this.set('dragging', true)
+        })
+
+        this.addEventListener('dragend', e => {
+          this.set('dragging', false)
+        })
+      },
+
+      _attachResizeListeners: function() {
+        this.$.resizeHandle.addEventListener('mousedown', e => {
+          const resizeHandleBBox = this.$.resizeHandle.getBoundingClientRect()
+
+          this.set('resizeDownPoint', {
+            x: resizeHandleBBox.x + resizeHandleBBox.width / 2,
+            y: resizeHandleBBox.y + resizeHandleBBox.height / 2
+          })
+
+          this.isResizing = true
+        })
+
+        window.addEventListener('mouseup', e => {
+          this.isResizing = false
+        })
+
+        window.addEventListener('mousemove', e => {
+          if (!this.isResizing) return
+
+          const bbox = this.getBoundingClientRect()
+
+          const delta = {
+            x: e.clientX - this.resizeDownPoint.x,
+            y: e.clientY - this.resizeDownPoint.y
+          }
+
+          this.style.width = `${bbox.width + delta.x}px`
+          this.style.height = `${bbox.height + delta.y}px`
+
+          const resizeHandleBBox = this.$.resizeHandle.getBoundingClientRect()
+
+          this.set('resizeDownPoint', {
+            x: resizeHandleBBox.x + resizeHandleBBox.width / 2,
+            y: resizeHandleBBox.y + resizeHandleBBox.height / 2
+          })
+        })
+      },
+
+      _requestFullscreen: function() {
+        this.fire('request-fullscreen')
+      },
+    })
+  </script>
+</dom-module>

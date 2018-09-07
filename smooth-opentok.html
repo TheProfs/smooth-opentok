@@ -1,5 +1,9 @@
 <link rel="import" href="../polymer/polymer.html">
 
+<link rel="import" href="video-stream.html">
+
+<script src="https://static.opentok.com/v2/js/opentok.min.js"></script>
+
 <!--
 `smooth-opentok`
 Opentok&#39;s API wrapped as a Polymer element for sane humans
@@ -8,13 +12,23 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
 -->
 
 <dom-module id="smooth-opentok">
+  <style>
+    #hidden {
+      display: none;
+    }
+  </style>
   <template>
-    <style>
-      :host {
-        display: block;
-      }
-    </style>
-    <h2>Hello [[prop1]]!</h2>
+    <div id="hidden">
+    </div>
+
+    <template is="dom-repeat" items="{{streams}}">
+      <video-stream
+        data-stream-id$="[[item.id]]"
+        stream="{{item}}"
+        hero$="[[!index]]"
+        on-request-fullscreen="_makeFullScreen">
+      </video-stream>
+    </template>
   </template>
 
   <script>
@@ -23,12 +37,76 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       is: 'smooth-opentok',
 
       properties: {
-        prop1: {
-          type: String,
-          value: 'smooth-opentok',
-        },
+        credentials: {
+          type: Object,
+          value: function() {
+            return {
+              api_key: 45990672,
+              session_id: '',
+              token: ''
+            }
+          }
+        }
       },
 
+      ready: function() {
+        window.smoothOpentok = this
+      },
+
+      attached: function() {
+        this.session = OT.initSession(this.credentials.api_key, this.credentials.session_id)
+
+        this.session.on('streamCreated', e => {
+          const subscriber = this.session.subscribe(e.stream, this.$.hidden, {
+            insertMode: 'append',
+            width: '100%',
+            height: '100%'
+          }, this._handleRTCError.bind(this))
+
+          subscriber.on('videoElementCreated', event => {
+            this.session.streams.map(stream => {
+              stream.publisher = {
+                element: event.element.parentNode.parentNode
+              }
+
+              return stream
+            })
+
+            this._connectionStateChanged()
+          })
+        })
+
+        this.session.on('streamDestroyed', this._connectionStateChanged.bind(this))
+      },
+
+      joinCall: function() {
+        const publisher = OT.initPublisher(this.$.hidden, {
+          videoSource: true,
+          insertMode: 'append',
+          width: '100%',
+          height: '100%'
+        }, this._handleRTCError.bind(this))
+
+        this.session.connect(this.credentials.token, err => {
+          if (err) return this._handleRTCError(error)
+
+          this.session.publish(publisher, this._handleRTCError.bind(this))
+        })
+
+        publisher.on('streamCreated', this._connectionStateChanged.bind(this))
+        publisher.on('streamDestroyed', this._connectionStateChanged.bind(this))
+      },
+
+      _connectionStateChanged: function() {
+        const streams = this.session.streams.map(stream => stream)
+        this.set('streams', streams)
+      },
+
+      _handleRTCError: function(e) {
+        if (!e) return
+
+        console.error(e)
+      }
     });
   </script>
 </dom-module>
