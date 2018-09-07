@@ -9,7 +9,13 @@ First, make sure you have the [Polymer CLI](https://www.npmjs.com/package/polyme
 ## Viewing Your Element
 
 ```
-$ polymer serve
+$ polymer serve -P https/1.1 --key local-https/server.key --cert local-https/server.crt --hostname localhost
+```
+
+and visit:
+
+```
+https://localhost:8081/components/smooth-opentok
 ```
 
 ## Running Tests

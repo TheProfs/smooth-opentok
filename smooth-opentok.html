@@ -42,8 +42,8 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
           value: function() {
             return {
               api_key: 45990672,
-              session_id: '',
-              token: ''
+              session_id: '1_MX40NTk5MDY3Mn5-MTUzNjE2MjE3MzA1Mn5lR1ZWRWJid0ZoVldDeStwYlNMMUVNeVd-fg',
+              token: 'T1==cGFydG5lcl9pZD00NTk5MDY3MiZzaWc9NTk2OGRjYWY3ZTc0NmMyNjRmMjk4ZTU3ODUwZjdkNWFkNWU5ODg3NTpzZXNzaW9uX2lkPTFfTVg0ME5UazVNRFkzTW41LU1UVXpOakUyTWpFM016QTFNbjVsUjFaV1JXSmlkMFpvVmxkRGVTdHdZbE5NTVVWTmVWZC1mZyZjcmVhdGVfdGltZT0xNTM2MTYyMTczJm5vbmNlPTAuNzUxNDY3MTIxOTExNjI0OSZyb2xlPXB1Ymxpc2hlciZleHBpcmVfdGltZT0xNTM4NTgxMzczJmluaXRpYWxfbGF5b3V0X2NsYXNzX2xpc3Q9'
             }
           }
         }
@@ -51,6 +51,12 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
 
       ready: function() {
         window.smoothOpentok = this
+
+        OT.registerScreenSharingExtension(
+          'chrome',
+          'fjdpgnenpoklmkcobgbnfnelpafdjhpp',
+          2
+        )
       },
 
       attached: function() {
