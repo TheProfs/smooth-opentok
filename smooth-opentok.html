@@ -16,6 +16,7 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       height: 200px;
     }
   </style>
+
   <template>
     <template is="dom-repeat" items="{{streams}}">
       <video-stream
@@ -39,6 +40,28 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
           notify: true
         },
 
+        extensionsInformation: {
+          type: Array,
+          value: function() {
+            return [
+              {
+                browser: 'chrome',
+                id: 'fjdpgnenpoklmkcobgbnfnelpafdjhpp',
+                version: 2
+              }
+            ]
+          },
+          notify: true
+        },
+
+        screenSharingCapability: {
+          type: Object,
+          value: function() {
+            return {}
+          },
+          notify: true
+        },
+
         credentials: {
           type: Object,
           value: function() {
@@ -56,38 +79,9 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       },
 
       attached: function() {
-        OT.registerScreenSharingExtension(
-          'chrome',
-          'fjdpgnenpoklmkcobgbnfnelpafdjhpp',
-          2
-        )
-
-        this.session = OT.initSession(
-          this.credentials.api_key,
-          this.credentials.session_id
-        )
-
-        this.session.on('streamCreated', e => {
-          const subscriber = this.session.subscribe(e.stream, null, {
-            insertDefaultUI: false
-          }, this._handleRTCError.bind(this))
-
-          subscriber.on('videoElementCreated', e => {
-            this.push('streams', Object.assign(subscriber.stream, {
-              element: e.element
-            }))
-          })
-        })
-
-        this.session.on('streamDestroyed', e => {
-          const i = this.streams.findIndex(item => item.id === e.stream.id)
-          this.splice('streams', i, 1)
-        })
-
-        this.session.on('streamPropertyChanged', e => {
-          const i = this.streams.findIndex(item => item.id === e.stream.id)
-          this.set(`streams.${i}.${e.changedProperty}`, e.newValue)
-        })
+        this._registerScreenSharingExtensions()
+        this._setScreenSharingCapability()
+        this._initSession()
       },
 
       startCall: function() {
@@ -99,22 +93,29 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
         this.set('streams', [])
       },
 
-      startScreenshare: function() {
-        OT.checkScreenSharingCapability(res => {
-          if (!res.supported || !res.extensionRegistered) {
-            // @TODO Properly handle browser not supporting screen-sharing.
-            console.error('Browser does not support screen-sharing')
-          } else if (res.extensionRequired && !res.extensionInstalled) {
-            // @TODO Properly handle extension not installed
-            // (or non-HTTPS, or non-allowed site in extension manifest.json)
-            console.error('Extension not installed OR site not added in manifest.json allowed domains OR site is not https://')
-          } else {
-            this.screenSharingPublisher = this._createPublisher('screen')
-          }
-        })
+      startScreenSharing: function() {
+        this._setScreenSharingCapability()
+
+        if (!this.screenSharingCapability.supported) {
+          return this._handleCustomRTCError({
+            code: 0,
+            message: 'Screen-sharing not supported on this browser'
+          })
+        } else if (!this.screenSharingCapability.extensionRegistered) {
+          return this._handleCustomRTCError({
+            code: 0,
+            message: 'Extension not registered'
+          })
+        } else if (this.screenSharingCapability.extensionRequired &&
+            !this.screenSharingCapability.extensionInstalled) {
+          console.info('Requesting screen share extension installation...')
+          return this.fire('request-screen-share-extension-installation')
+        }
+
+        this.screenSharingPublisher = this._createPublisher('screen')
       },
 
-      stopScreenshare: function() {
+      stopScreenSharing: function() {
         this.session.unpublish(this.screenSharingPublisher)
       },
 
@@ -151,11 +152,57 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
         return publisher
       },
 
+      _initSession: function() {
+        this.session = OT.initSession(
+          this.credentials.api_key,
+          this.credentials.session_id
+        )
+
+        this.session.on('streamCreated', e => {
+          const subscriber = this.session.subscribe(e.stream, null, {
+            insertDefaultUI: false
+          }, this._handleRTCError.bind(this))
+
+          subscriber.on('videoElementCreated', e => {
+            this.push('streams', Object.assign(subscriber.stream, {
+              element: e.element
+            }))
+          })
+        })
+
+        this.session.on('streamDestroyed', e => {
+          const i = this.streams.findIndex(item => item.id === e.stream.id)
+          this.splice('streams', i, 1)
+        })
+
+        this.session.on('streamPropertyChanged', e => {
+          const i = this.streams.findIndex(item => item.id === e.stream.id)
+          this.set(`streams.${i}.${e.changedProperty}`, e.newValue)
+        })
+      },
+
+      _registerScreenSharingExtensions: function() {
+        this.extensionsInformation.forEach(info => {
+          OT.registerScreenSharingExtension(info.browser, info.id, info.version)
+        })
+      },
+
+      _setScreenSharingCapability: function() {
+        OT.checkScreenSharingCapability(res => {
+          this.set('screenSharingCapability', res)
+        })
+      },
+
+      _handleCustomRTCError: function(err) {
+        console.error(err)
+
+        return this._handleRTCError()
+      },
+
       _handleRTCError: function(err) {
-        // @TODO Figure out a way to handle errors.
         if (!err) return
 
-        console.error(err)
+        this.fire('error', err)
       }
     });
   </script>
