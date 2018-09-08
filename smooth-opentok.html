@@ -18,12 +18,18 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
   </style>
 
   <template>
+    <!--@TODO
+      Remove this it's only for dev purposes.
+      This element should render nothing, it only publishes it's properties.
+      `<video-stream>`s should be rendered externally.
+    -->
     <template is="dom-repeat" items="{{streams}}">
       <video-stream
         stream="{{item}}"
         on-request-fullscreen="_makeFullScreen">
       </video-stream>
     </template>
+    <!--/@TODO-->
   </template>
 
   <script>
