@@ -64,16 +64,19 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
           2
         )
 
-        this.session = OT.initSession(this.credentials.api_key, this.credentials.session_id)
+        this.session = OT.initSession(
+          this.credentials.api_key,
+          this.credentials.session_id
+        )
 
         this.session.on('streamCreated', e => {
           const subscriber = this.session.subscribe(e.stream, null, {
             insertDefaultUI: false
           }, this._handleRTCError.bind(this))
 
-          subscriber.on('videoElementCreated', event => {
+          subscriber.on('videoElementCreated', e => {
             this.push('streams', Object.assign(subscriber.stream, {
-              element: event.element
+              element: e.element
             }))
           })
         })
@@ -90,28 +93,7 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       },
 
       startCall: function() {
-        this.publisher = OT.initPublisher(null, {
-          publishVideo: false,
-          insertDefaultUI: false
-        }, this._handleRTCError.bind(this))
-
-        this.session.connect(this.credentials.token, err => {
-          if (err) return this._handleRTCError(error)
-
-          this.session.publish(this.publisher, this._handleRTCError.bind(this))
-        })
-
-        this.publisher.on('videoElementCreated', e => {
-          this.publisher.on('streamCreated', () => {
-            this.push('streams', Object.assign(this.publisher.stream, {
-              element: e.element
-            }))
-          })
-        })
-
-        this.publisher.on('streamDestroyed', e => {
-          this.set('streams', [])
-        })
+        this.publisher = this._createPublisher('camera')
       },
 
       toggleVideo: function(flag) {
@@ -120,10 +102,10 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
 
       stopCall: function() {
         this.session.disconnect()
+        this.set('streams', [])
       },
 
       startScreenshare: function() {
-        // @TODO cleanup code style
         let ffWhitelistVersion; // = '36';
 
         OT.checkScreenSharingCapability(response => {
@@ -136,40 +118,53 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
             && navigator.userAgent.match(/Firefox\/(\d+)/)[1] < ffWhitelistVersion) {
               // @TODO Handle FF <36
           } else {
-            // Screen sharing is available. Publish the screen.
-            // Create an element, but do not display it in the HTML DOM:
-            this.screenSharingPublisher = OT.initPublisher(null, { insertDefaultUI: false, videoSource: 'screen' }, err => {
-              if (err) return this._handleRTCError(err)
-
-              this.session.publish(this.screenSharingPublisher, err => {
-                if (err) return this._handleRTCError(err)
-              })
-            })
-
-            this.screenSharingPublisher.on('videoElementCreated', e => {
-              this.screenSharingPublisher.on('streamCreated', () => {
-                this.push('streams', Object.assign(this.screenSharingPublisher.stream, {
-                  element: e.element
-                }))
-              })
-            })
-
-            this.screenSharingPublisher.on('streamDestroyed', e => {
-              const i = this.streams.findIndex(item => item.id === e.stream.id)
-              this.splice('streams', i, 1)
-            })
+            this.screenSharingPublisher = this._createPublisher('screen')
           }
-        });
+        })
       },
 
       stopScreenshare: function() {
         this.session.unpublish(this.screenSharingPublisher)
       },
 
-      _handleRTCError: function(e) {
-        if (!e) return
+      _createPublisher: function(videoSource = 'camera') {
+        const publisher = OT.initPublisher(null, {
+          videoSource: videoSource === 'camera' ? undefined : videoSource,
+          publishVideo: videoSource === 'camera' ? false : undefined,
+          insertDefaultUI: false
+        }, this._handleRTCError.bind(this))
 
-        console.error(e)
+        if (this.session.isConnected()) {
+          this.session.publish(publisher, this._handleRTCError.bind(this))
+        } else {
+          this.session.connect(this.credentials.token, err => {
+            if (err) return this._handleRTCError(error)
+
+            this.session.publish(publisher, this._handleRTCError.bind(this))
+          })
+        }
+
+        publisher.on('videoElementCreated', e => {
+          publisher.on('streamCreated', () => {
+            this.push('streams', Object.assign(publisher.stream, {
+              element: e.element
+            }))
+          })
+        })
+
+        publisher.on('streamDestroyed', e => {
+          const i = this.streams.findIndex(item => item.id === e.stream.id)
+          this.splice('streams', i, 1)
+        })
+
+        return publisher
+      },
+
+      _handleRTCError: function(err) {
+        // @TODO Figure out a way to handle errors.
+        if (!err) return
+
+        console.error(err)
       }
     });
   </script>
