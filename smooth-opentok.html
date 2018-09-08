@@ -107,6 +107,8 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
             // @TODO Properly handle browser not supporting screen-sharing.
             console.error('Browser does not support screen-sharing')
           } else if (res.extensionRequired && !res.extensionInstalled) {
+            // @TODO Properly handle extension not installed
+            // (or non-HTTPS, or non-allowed site in extension manifest.json)
             console.error('Extension not installed OR site not added in manifest.json allowed domains OR site is not https://')
           } else {
             this.screenSharingPublisher = this._createPublisher('screen')
