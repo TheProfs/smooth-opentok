@@ -1,7 +1,5 @@
 <link rel="import" href="../polymer/polymer.html">
-
 <link rel="import" href="video-stream.html">
-
 <script src="https://static.opentok.com/v2/js/opentok.min.js"></script>
 
 <!--
@@ -13,14 +11,12 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
 
 <dom-module id="smooth-opentok">
   <style>
-    #hidden {
-      display: none;
+    video-stream {
+      width: 150px;
+      height: 200px;
     }
   </style>
   <template>
-    <div id="hidden">
-    </div>
-
     <template is="dom-repeat" items="{{streams}}">
       <video-stream
         data-stream-id$="[[item.id]]"
@@ -41,7 +37,8 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
           type: Array,
           value: function() {
             return []
-          }
+          },
+          notify: true
         },
 
         credentials: {
@@ -70,31 +67,32 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
         this.session = OT.initSession(this.credentials.api_key, this.credentials.session_id)
 
         this.session.on('streamCreated', e => {
-          const subscriber = this.session.subscribe(e.stream, this.$.hidden, {
-            insertMode: 'append',
-            width: '100%',
-            height: '100%'
+          const subscriber = this.session.subscribe(e.stream, null, {
+            insertDefaultUI: false
           }, this._handleRTCError.bind(this))
 
           subscriber.on('videoElementCreated', event => {
             this.push('streams', Object.assign(subscriber.stream, {
-              element: event.element.parentNode.parentNode
+              element: event.element
             }))
           })
         })
 
-        this.session.on('streamDestroyed', stream => {
-          const index = this.streams.findIndex(item => item.id === stream.id)
-          this.splice('streams', index, 1)
+        this.session.on('streamDestroyed', e => {
+          const i = this.streams.findIndex(item => item.id === e.stream.id)
+          this.splice('streams', i, 1)
+        })
+
+        this.session.on('streamPropertyChanged', e => {
+          const i = this.streams.findIndex(item => item.id === e.stream.id)
+          this.set(`streams.${i}.${e.changedProperty}`, e.newValue)
         })
       },
 
       startCall: function() {
-        this.publisher = OT.initPublisher(this.$.hidden, {
+        this.publisher = OT.initPublisher(null, {
           publishVideo: false,
-          insertMode: 'append',
-          width: '100%',
-          height: '100%'
+          insertDefaultUI: false
         }, this._handleRTCError.bind(this))
 
         this.session.connect(this.credentials.token, err => {
@@ -103,22 +101,25 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
           this.session.publish(this.publisher, this._handleRTCError.bind(this))
         })
 
-        this.publisher.on('streamCreated', () => {
-          this.push('streams', Object.assign(this.publisher.stream, {
-            element: this.publisher.element
-          }))
+        this.publisher.on('videoElementCreated', e => {
+          this.publisher.on('streamCreated', () => {
+            this.push('streams', Object.assign(this.publisher.stream, {
+              element: e.element
+            }))
+          })
         })
-        this.publisher.on('streamDestroyed', stream => {
+
+        this.publisher.on('streamDestroyed', e => {
           this.set('streams', [])
         })
       },
 
-      endCall: function() {
-        this.session.disconnect()
-      },
-
       toggleVideo: function(flag) {
         this.publisher.publishVideo(flag)
+      },
+
+      stopCall: function() {
+        this.session.disconnect()
       },
 
       startScreenshare: function() {
@@ -137,7 +138,7 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
           } else {
             // Screen sharing is available. Publish the screen.
             // Create an element, but do not display it in the HTML DOM:
-            this.screenSharingPublisher = OT.initPublisher(this.$.hidden, { insertMode: 'append', width: '100%', height: '100%', videoSource: 'screen' }, err => {
+            this.screenSharingPublisher = OT.initPublisher(null, { insertDefaultUI: false, videoSource: 'screen' }, err => {
               if (err) return this._handleRTCError(err)
 
               this.session.publish(this.screenSharingPublisher, err => {
@@ -145,15 +146,17 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
               })
             })
 
-            this.screenSharingPublisher.on('streamCreated', () => {
-              this.push('streams', Object.assign(this.publisher.stream, {
-                element: this.screenSharingPublisher.element
-              }))
+            this.screenSharingPublisher.on('videoElementCreated', e => {
+              this.screenSharingPublisher.on('streamCreated', () => {
+                this.push('streams', Object.assign(this.screenSharingPublisher.stream, {
+                  element: e.element
+                }))
+              })
             })
 
-            this.screenSharingPublisher.on('streamDestroyed', stream => {
-              const index = this.streams.findIndex(item => item.id === stream.id)
-              this.splice('streams', index, 1)
+            this.screenSharingPublisher.on('streamDestroyed', e => {
+              const i = this.streams.findIndex(item => item.id === e.stream.id)
+              this.splice('streams', i, 1)
             })
           }
         });
