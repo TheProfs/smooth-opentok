@@ -96,10 +96,6 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
         this.publisher = this._createPublisher('camera')
       },
 
-      toggleVideo: function(flag) {
-        this.publisher.publishVideo(flag)
-      },
-
       stopCall: function() {
         this.session.disconnect()
         this.set('streams', [])

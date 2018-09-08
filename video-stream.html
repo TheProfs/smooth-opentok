@@ -91,6 +91,12 @@ An individual video stream element
           on-tap="_toggleAudio"
           hidden$="[[_shouldHideMuteButton(stream)]]">
         </paper-icon-button>
+
+        <paper-icon-button
+          icon$="[[_computeVideoIcon(stream.hasVideo)]]"
+          on-tap="_toggleVideo"
+          hidden$="[[_shouldHideVideoButton(stream)]]">
+        </paper-icon-button>
       </div>
 
       <div id="audio-cover" hidden$="[[stream.hasVideo]]">
@@ -214,15 +220,27 @@ An individual video stream element
         this.fire('request-fullscreen')
       },
 
-      _toggleAudio: function(e) {
+      _toggleAudio: function() {
         this.stream.publisher.publishAudio(!this.stream.hasAudio)
+      },
+
+      _toggleVideo: function() {
+        this.stream.publisher.publishVideo(!this.stream.hasVideo)
       },
 
       _computeMuteIcon: function(hasAudio) {
         return hasAudio ? 'av:mic' : 'av:mic-off'
       },
 
+      _computeVideoIcon: function(hasVideo) {
+        return hasVideo ? 'av:videocam' : 'av:videocam-off'
+      },
+
       _shouldHideMuteButton: function(stream) {
+        return !stream.publisher || stream.videoType === 'screen'
+      },
+
+      _shouldHideVideoButton: function(stream) {
         return !stream.publisher || stream.videoType === 'screen'
       }
     })
