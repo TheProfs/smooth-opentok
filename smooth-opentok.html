@@ -19,9 +19,7 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
   <template>
     <template is="dom-repeat" items="{{streams}}">
       <video-stream
-        data-stream-id$="[[item.id]]"
         stream="{{item}}"
-        hero$="[[!index]]"
         on-request-fullscreen="_makeFullScreen">
       </video-stream>
     </template>
