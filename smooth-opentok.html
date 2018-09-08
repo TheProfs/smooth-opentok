@@ -37,6 +37,13 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       is: 'smooth-opentok',
 
       properties: {
+        streams: {
+          type: Array,
+          value: function() {
+            return []
+          }
+        },
+
         credentials: {
           type: Object,
           value: function() {
@@ -51,15 +58,15 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
 
       ready: function() {
         window.smoothOpentok = this
+      },
 
+      attached: function() {
         OT.registerScreenSharingExtension(
           'chrome',
           'fjdpgnenpoklmkcobgbnfnelpafdjhpp',
           2
         )
-      },
 
-      attached: function() {
         this.session = OT.initSession(this.credentials.api_key, this.credentials.session_id)
 
         this.session.on('streamCreated', e => {
@@ -70,22 +77,19 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
           }, this._handleRTCError.bind(this))
 
           subscriber.on('videoElementCreated', event => {
-            this.session.streams.map(stream => {
-              stream.publisher = {
-                element: event.element.parentNode.parentNode
-              }
-
-              return stream
-            })
-
-            this._connectionStateChanged()
+            this.push('streams', Object.assign(subscriber.stream, {
+              element: event.element.parentNode.parentNode
+            }))
           })
         })
 
-        this.session.on('streamDestroyed', this._connectionStateChanged.bind(this))
+        this.session.on('streamDestroyed', stream => {
+          const index = this.streams.findIndex(item => item.id === stream.id)
+          this.splice('streams', index, 1)
+        })
       },
 
-      joinCall: function() {
+      startCall: function() {
         this.publisher = OT.initPublisher(this.$.hidden, {
           publishVideo: false,
           insertMode: 'append',
@@ -99,17 +103,64 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
           this.session.publish(this.publisher, this._handleRTCError.bind(this))
         })
 
-        this.publisher.on('streamCreated', this._connectionStateChanged.bind(this))
-        this.publisher.on('streamDestroyed', this._connectionStateChanged.bind(this))
+        this.publisher.on('streamCreated', () => {
+          this.push('streams', Object.assign(this.publisher.stream, {
+            element: this.publisher.element
+          }))
+        })
+        this.publisher.on('streamDestroyed', stream => {
+          this.set('streams', [])
+        })
+      },
+
+      endCall: function() {
+        this.session.disconnect()
       },
 
       toggleVideo: function(flag) {
         this.publisher.publishVideo(flag)
       },
 
-      _connectionStateChanged: function() {
-        const streams = this.session.streams.map(stream => stream)
-        this.set('streams', streams)
+      startScreenshare: function() {
+        // @TODO cleanup code style
+        let ffWhitelistVersion; // = '36';
+
+        OT.checkScreenSharingCapability(response => {
+          if (!response.supported || response.extensionRegistered === false) {
+            // @TODO Handle browser not supporting screen sharing.
+          } else if (response.extensionInstalled === false
+              && (response.extensionRequired || !ffWhitelistVersion)) {
+                // @TODO Handle extension not installed.
+          } else if (ffWhitelistVersion && navigator.userAgent.match(/Firefox/)
+            && navigator.userAgent.match(/Firefox\/(\d+)/)[1] < ffWhitelistVersion) {
+              // @TODO Handle FF <36
+          } else {
+            // Screen sharing is available. Publish the screen.
+            // Create an element, but do not display it in the HTML DOM:
+            this.screenSharingPublisher = OT.initPublisher(this.$.hidden, { insertMode: 'append', width: '100%', height: '100%', videoSource: 'screen' }, err => {
+              if (err) return this._handleRTCError(err)
+
+              this.session.publish(this.screenSharingPublisher, err => {
+                if (err) return this._handleRTCError(err)
+              })
+            })
+
+            this.screenSharingPublisher.on('streamCreated', () => {
+              this.push('streams', Object.assign(this.publisher.stream, {
+                element: this.screenSharingPublisher.element
+              }))
+            })
+
+            this.screenSharingPublisher.on('streamDestroyed', stream => {
+              const index = this.streams.findIndex(item => item.id === stream.id)
+              this.splice('streams', index, 1)
+            })
+          }
+        });
+      },
+
+      stopScreenshare: function() {
+        this.session.unpublish(this.screenSharingPublisher)
       },
 
       _handleRTCError: function(e) {

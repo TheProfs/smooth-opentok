@@ -97,7 +97,7 @@ An individual video stream element
       },
 
       attached: function() {
-        this.$.video.appendChild(this.stream.publisher.element)
+        Polymer.dom(this.$.video).appendChild(this.stream.element)
       },
 
       setDownPoint: function({ x, y }) {
