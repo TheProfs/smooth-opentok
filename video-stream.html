@@ -89,7 +89,7 @@ An individual video stream element
         <paper-icon-button
           icon$="[[_computeMuteIcon(stream.hasAudio)]]"
           on-tap="_toggleAudio"
-          hidden$="[[!stream.publisher]]">
+          hidden$="[[_shouldHideMuteButton(stream)]]">
         </paper-icon-button>
       </div>
 
@@ -220,6 +220,10 @@ An individual video stream element
 
       _computeMuteIcon: function(hasAudio) {
         return hasAudio ? 'av:mic' : 'av:mic-off'
+      },
+
+      _shouldHideMuteButton: function(stream) {
+        return !stream.publisher || stream.videoType === 'screen'
       }
     })
   </script>
