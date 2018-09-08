@@ -102,17 +102,12 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       },
 
       startScreenshare: function() {
-        let ffWhitelistVersion; // = '36';
-
-        OT.checkScreenSharingCapability(response => {
-          if (!response.supported || response.extensionRegistered === false) {
-            // @TODO Handle browser not supporting screen sharing.
-          } else if (response.extensionInstalled === false
-              && (response.extensionRequired || !ffWhitelistVersion)) {
-                // @TODO Handle extension not installed.
-          } else if (ffWhitelistVersion && navigator.userAgent.match(/Firefox/)
-            && navigator.userAgent.match(/Firefox\/(\d+)/)[1] < ffWhitelistVersion) {
-              // @TODO Handle FF <36
+        OT.checkScreenSharingCapability(res => {
+          if (!res.supported || !res.extensionRegistered) {
+            // @TODO Properly handle browser not supporting screen-sharing.
+            console.error('Browser does not support screen-sharing')
+          } else if (res.extensionRequired && !res.extensionInstalled) {
+            console.error('Extension not installed OR site not added in manifest.json allowed domains OR site is not https://')
           } else {
             this.screenSharingPublisher = this._createPublisher('screen')
           }
