@@ -46,6 +46,14 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
           notify: true
         },
 
+        screenSharingCapability: {
+          type: Object,
+          value: function() {
+            return {}
+          },
+          notify: true
+        },
+
         extensionsInformation: {
           type: Array,
           value: function() {
@@ -56,15 +64,8 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
                 version: 2
               }
             ]
-          }
-        },
-
-        screenSharingCapability: {
-          type: Object,
-          value: function() {
-            return {}
           },
-          notify: true
+          observer: '_initScreensharing'
         },
 
         credentials: {
@@ -75,18 +76,13 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
               session_id: '1_MX40NTk5MDY3Mn5-MTUzNjE2MjE3MzA1Mn5lR1ZWRWJid0ZoVldDeStwYlNMMUVNeVd-fg',
               token: 'T1==cGFydG5lcl9pZD00NTk5MDY3MiZzaWc9NTk2OGRjYWY3ZTc0NmMyNjRmMjk4ZTU3ODUwZjdkNWFkNWU5ODg3NTpzZXNzaW9uX2lkPTFfTVg0ME5UazVNRFkzTW41LU1UVXpOakUyTWpFM016QTFNbjVsUjFaV1JXSmlkMFpvVmxkRGVTdHdZbE5NTVVWTmVWZC1mZyZjcmVhdGVfdGltZT0xNTM2MTYyMTczJm5vbmNlPTAuNzUxNDY3MTIxOTExNjI0OSZyb2xlPXB1Ymxpc2hlciZleHBpcmVfdGltZT0xNTM4NTgxMzczJmluaXRpYWxfbGF5b3V0X2NsYXNzX2xpc3Q9'
             }
-          }
+          },
+          observer: '_initSession'
         }
       },
 
-      ready: function() {
-        window.smoothOpentok = this
-      },
-
       attached: function() {
-        this._registerScreenSharingExtensions()
-        this._setScreenSharingCapability()
-        this._initSession()
+        window.smoothOpentok = this
       },
 
       startCall: function() {
@@ -157,10 +153,10 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
         return publisher
       },
 
-      _initSession: function() {
+      _initSession: function(credentials) {
         this.session = OT.initSession(
-          this.credentials.api_key,
-          this.credentials.session_id
+          credentials.api_key,
+          credentials.session_id
         )
 
         this.session.on('streamCreated', e => {
@@ -186,8 +182,13 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
         })
       },
 
-      _registerScreenSharingExtensions: function() {
-        this.extensionsInformation.forEach(info => {
+      _initScreensharing: function(extensionsInformation) {
+        this._registerScreenSharingExtensions(extensionsInformation)
+        this._setScreenSharingCapability()
+      },
+
+      _registerScreenSharingExtensions: function(extensionsInformation) {
+        extensionsInformation.forEach(info => {
           OT.registerScreenSharingExtension(info.browser, info.id, info.version)
         })
       },
