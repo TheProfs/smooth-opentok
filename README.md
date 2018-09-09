@@ -24,7 +24,7 @@ screen-sharing without extensions.
 $ polymer serve -P https/1.1 --key local-https/server.key --cert local-https/server.crt --hostname localhost --port 3000
 ```
 
-and visit: https://localhost:3000/components/smooth-opentok
+and visit: https://localhost:3000/components/smooth-opentok.
 
 
 **Important:** You will be asked to visit https://127.0.0.1:3000/components/smooth-opentok.
