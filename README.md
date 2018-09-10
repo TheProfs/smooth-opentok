@@ -10,7 +10,8 @@ First, make sure you have the
 ## Trust the local SSL certificate
 
 You can find the certificate in `/local-https`. You need this because opentok.js
-(esp. screen-sharing) only work properly on `https://` schemes.
+(esp. screen-sharing) only work properly on `https://` schemes. You can find
+a guide on how to trust self-signed certificates for MacOS [here][trust-self-signed-ssl-macos].
 
 ## Load the unpacked screen-sharing extensions
 
@@ -60,5 +61,5 @@ $ polymer test
 Your application is already set up to be tested via [web-component-tester](https://github.com/Polymer/web-component-tester).
 Run `polymer test` to run your application's test suite locally.
 
-
+[trust-self-signed-ssl-macos]: https://tosbourn.com/getting-os-x-to-trust-self-signed-ssl-certificates/
 [opentok-server-sdks]: https://tokbox.com/developer/sdks/server/
