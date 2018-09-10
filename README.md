@@ -23,8 +23,8 @@ screen-sharing without extensions.
 You need to setup a server that returns OpenTok/Tokbox credentials, using one
 of the [OpenTok Server SDK's][opentok-server-sdks].
 
-The element `/demo` page is configured to fetch credentials from:
-https://localhost:5003/api/v1/rtc-session/[session-name], where
+The element `/demo` page is configured to fetch credentials by sending a `POST`
+request to https://localhost:5003/api/v1/rtc-session/[session-name], where
 `[session-name]` should be replaced with the name of the session you wish to
 connect to.
 
