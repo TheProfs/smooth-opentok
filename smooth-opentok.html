@@ -54,6 +54,21 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
           type: String
         },
 
+        session: {
+          type: Object,
+          notify: true
+        },
+
+        publisher: {
+          type: Object,
+          notify: true
+        },
+
+        screenSharingPublisher: {
+          type: Object,
+          notify: true
+        },
+
         streams: {
           type: Array,
           value: function() {
@@ -97,7 +112,7 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       },
 
       startCall: function() {
-        this.publisher = this._createPublisher('camera')
+        this.set('publisher', this._createPublisher('camera'))
       },
 
       stopCall: function() {
@@ -124,7 +139,7 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
           return this.fire('request-screen-share-extension-installation')
         }
 
-        this.screenSharingPublisher = this._createPublisher('screen')
+        this.set('screenSharingPublisher', this._createPublisher('screen'))
       },
 
       stopScreenSharing: function() {
@@ -165,10 +180,10 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       },
 
       _initSession: function(credentials) {
-        this.session = OT.initSession(
+        this.set('session', OT.initSession(
           credentials.api_key,
           credentials.session_id
-        )
+        ))
 
         this.session.on('streamCreated', e => {
           const subscriber = this.session.subscribe(e.stream, null, {
