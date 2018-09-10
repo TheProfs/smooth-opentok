@@ -18,6 +18,26 @@ You can find extensions for each browser in the `/extensions` directory. For
 now it's just Chrome, since the latest versions of Firefox support
 screen-sharing without extensions.
 
+## Start a credentials server
+
+You need to setup a server that returns OpenTok/Tokbox credentials, using one
+of the [OpenTok Server SDK's][opentok-server-sdks].
+
+The element `/demo` page is configured to fetch credentials from:
+https://localhost:5003/api/v1/rtc-session/[session-name], where
+`[session-name]` should be replaced with the name of the session you wish to
+connect to.
+
+This URL is configurable by setting the `getRtcTokenUrl` attribute/property on
+the element, for example:
+
+```html
+<smooth-opentok
+  get-rtc-token-url="https://my-server.com/rtc-session/foo-session">
+</smooth-opentok>
+```
+
+
 ## Run the element.
 
 ```bash
@@ -39,3 +59,6 @@ $ polymer test
 
 Your application is already set up to be tested via [web-component-tester](https://github.com/Polymer/web-component-tester).
 Run `polymer test` to run your application's test suite locally.
+
+
+[opentok-server-sdks]: https://tokbox.com/developer/sdks/server/
