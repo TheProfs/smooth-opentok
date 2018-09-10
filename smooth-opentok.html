@@ -26,8 +26,7 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       url="[[getRtcTokenUrl]]"
       last-response="{{credentials}}"
       on-response="_handleCredentialRetrieval"
-      on-error="_handleCredentialRetrievalError"
-      auto>
+      on-error="_handleCredentialRetrievalError">
     </iron-ajax>
 
     <!--@TODO
@@ -109,6 +108,7 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
 
       attached: function() {
         window.smoothOpentok = this
+        this.$.rtcSessionAjax.generateRequest()
       },
 
       startCall: function() {

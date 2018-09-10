@@ -8,7 +8,7 @@ const spawnPolymerTest = ({ times = 2 }) => {
       return new Promise(resolve => {
         const child = spawn(set[0], set[1])
         child.stdout.pipe(process.stdout)
-        child.stderr.pipe(process.stdout)
+        child.stderr.pipe(process.stderr)
         child.on('exit', resolve)
       })
     })

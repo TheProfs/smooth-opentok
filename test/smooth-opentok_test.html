@@ -14,15 +14,68 @@
   <body>
     <test-fixture id="basic">
       <template>
-        <smooth-opentok></smooth-opentok>
+        <smooth-opentok
+          get-rtc-token-url="https://localhost:5003/api/v1/rtc-session/Hk2Ku6X_X">
+        </smooth-opentok>
       </template>
     </test-fixture>
 
     <script>
-      suite('smooth-opentok', function() {
-        test('instantiating the element works', function() {
-          var element = fixture('basic');
-          assert.equal(element.is, 'smooth-opentok');
+      chai.should()
+
+      describe('Element instantiation', () => {
+        it('instantiating the element works', () => {
+          const element = fixture('basic')
+
+          assert.equal(element.is, 'smooth-opentok')
+        })
+      })
+
+      describe('Starts a call', function() {
+        this.timeout(60000)
+
+        let element
+
+        beforeEach(function(done) {
+          element = fixture('basic')
+
+          element.addEventListener('session-changed', function cb(e) {
+            e.currentTarget.removeEventListener(e.type, cb)
+
+            element.addEventListener('streams-changed', function cb(e) {
+              if (e.detail.path !== 'streams.length') return
+
+              if (element.streams.length === 2) {
+                e.currentTarget.removeEventListener(e.type, cb)
+                return done()
+              }
+
+              if (element.streams.length > 2) {
+                e.currentTarget.removeEventListener(e.type, cb)
+                return done(new Error('More than 2 streams'))
+              }
+            })
+
+            element.startCall()
+          })
+        })
+
+        afterEach(done => {
+          // @NOTE
+          // Wait for the other client to create his video element
+          // and run his tests before moving on.
+          setTimeout(() => done(), 3000)
+        })
+
+        it('eventually ends up with exactly 2 streams', () => {
+          element.streams.should.have.length(2)
+        })
+
+        it('should have a <video> element property for each stream', () => {
+          element.streams.forEach(stream => {
+            stream.element.should.be.ok
+            stream.element.constructor.name.should.equal('HTMLVideoElement')
+          })
         })
       })
     </script>
