@@ -38,7 +38,6 @@ the element, for example:
 </smooth-opentok>
 ```
 
-
 ## Run the element.
 
 ```bash
