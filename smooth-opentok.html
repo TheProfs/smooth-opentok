@@ -1,4 +1,6 @@
 <link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-ajax/iron-ajax.html">
+
 <link rel="import" href="video-stream.html">
 <script src="https://static.opentok.com/v2/js/opentok.min.js"></script>
 
@@ -18,6 +20,16 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
   </style>
 
   <template>
+    <iron-ajax
+      id="rtcSessionAjax"
+      method="POST"
+      url="[[getRtcTokenUrl]]"
+      last-response="{{credentials}}"
+      on-response="_handleCredentialRetrieval"
+      on-error="_handleCredentialRetrievalError"
+      auto>
+    </iron-ajax>
+
     <!--@TODO
       Remove this it's only for dev purposes.
       This element should render nothing, it only publishes it's properties.
@@ -38,6 +50,10 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       is: 'smooth-opentok',
 
       properties: {
+        getRtcTokenUrl: {
+          type: String
+        },
+
         streams: {
           type: Array,
           value: function() {
@@ -71,13 +87,8 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
         credentials: {
           type: Object,
           value: function() {
-            return {
-              api_key: 45990672,
-              session_id: '1_MX40NTk5MDY3Mn5-MTUzNjE2MjE3MzA1Mn5lR1ZWRWJid0ZoVldDeStwYlNMMUVNeVd-fg',
-              token: 'T1==cGFydG5lcl9pZD00NTk5MDY3MiZzaWc9NTk2OGRjYWY3ZTc0NmMyNjRmMjk4ZTU3ODUwZjdkNWFkNWU5ODg3NTpzZXNzaW9uX2lkPTFfTVg0ME5UazVNRFkzTW41LU1UVXpOakUyTWpFM016QTFNbjVsUjFaV1JXSmlkMFpvVmxkRGVTdHdZbE5NTVVWTmVWZC1mZyZjcmVhdGVfdGltZT0xNTM2MTYyMTczJm5vbmNlPTAuNzUxNDY3MTIxOTExNjI0OSZyb2xlPXB1Ymxpc2hlciZleHBpcmVfdGltZT0xNTM4NTgxMzczJmluaXRpYWxfbGF5b3V0X2NsYXNzX2xpc3Q9'
-            }
-          },
-          observer: '_initSession'
+            return undefined
+          }
         }
       },
 
@@ -199,9 +210,18 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
         })
       },
 
-      _handleCustomRTCError: function(err) {
-        console.error(err)
+      _handleCredentialRetrieval: function(e) {
+        this._initSession(e.detail.response)
+      },
 
+      _handleCredentialRetrievalError: function(err) {
+        return this._handleCustomRTCError({
+          code: 0,
+          message: err.detail.error.stack
+        })
+      },
+
+      _handleCustomRTCError: function(err) {
         return this._handleRTCError()
       },
 

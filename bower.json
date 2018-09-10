@@ -3,7 +3,8 @@
   "description": "Opentok&#39;s API wrapped as a Polymer element for sane humans",
   "main": "smooth-opentok.html",
   "dependencies": {
-    "polymer": "Polymer/polymer#^1.4.0"
+    "polymer": "Polymer/polymer#^1.4.0",
+    "iron-ajax": "PolymerElements/iron-ajax#1.4.4"
   },
   "devDependencies": {
     "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",
