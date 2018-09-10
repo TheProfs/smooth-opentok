@@ -38,7 +38,7 @@ the element, for example:
 </smooth-opentok>
 ```
 
-## Run the element.
+## Run the element
 
 ```bash
 $ polymer serve -P https/1.1 --key local-https/server.key --cert local-https/server.crt --hostname localhost --port 3000
