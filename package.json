@@ -1,0 +1,30 @@
+{
+  "name": "smooth-opentok",
+  "version": "0.1.0",
+  "description": "Opentok&#39;s API wrapped as a Polymer element for sane humans",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha test/run.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheProfs/smooth-opentok.git"
+  },
+  "keywords": [
+    "opentok",
+    "tokbox",
+    "polymer"
+  ],
+  "author": "@nicholaswmin",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/TheProfs/smooth-opentok/issues"
+  },
+  "homepage": "https://github.com/TheProfs/smooth-opentok#readme",
+  "devDependencies": {
+    "mocha": "^5.2.0"
+  }
+}
