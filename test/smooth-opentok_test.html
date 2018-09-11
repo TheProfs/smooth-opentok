@@ -94,6 +94,9 @@
         })
 
         describe('#startScreenSharing()', function() {
+          // @NOTE
+          // For test with extension installed,
+          // see: https://github.com/TheProfs/smooth-opentok/issues/2
           describe('without extension installed', () => {
             it('fires a request-screen-share-extension-installation event',
               done => {
