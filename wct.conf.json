@@ -1,4 +1,5 @@
 {
+  "expanded": true,
   "suites": ["test/*.html"],
   "plugins": {
     "local": {
