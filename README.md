@@ -2,10 +2,11 @@
 
 Opentok&#39;s API wrapped as a Polymer element for sane humans.
 
-## Install the Polymer-CLI
+## Install prerequisites
 
-First, make sure you have the
-[Polymer CLI](https://www.npmjs.com/package/polymer-cli) installed.
+```bash
+$ npm install -g polymer-cli
+```
 
 ## Trust the local SSL certificate
 
@@ -53,18 +54,17 @@ since the SSL certificates are specifically made for `localhost`.
 
 ## Running Tests
 
-```
-$ polymer test
-```
+Ensure the credentials server (mentioned above) is running, then:
 
-Your application is already set up to be tested via [web-component-tester](https://github.com/Polymer/web-component-tester).
-Run `polymer test` to run your application's test suite locally.
-
+```
+$ npm install -g mocha
+$ npm test
+```
 
 ## Authors
 
 - Nicholas Kyriakides, [@nicholaswmin][nicholaswmin]
-- [TheProfs][the-profs](Owners)
+- [TheProfs][the-profs] (Owners)
 
 [trust-self-signed-ssl-macos]: https://tosbourn.com/getting-os-x-to-trust-self-signed-ssl-certificates/
 [opentok-server-sdks]: https://tokbox.com/developer/sdks/server/
