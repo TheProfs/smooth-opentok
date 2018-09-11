@@ -4,21 +4,18 @@ const spawn = require('child_process').spawn
 
 const spawnPolymerTest = ({ times = 2 }) => {
   const tasks = Array.from({ length: times }, () => ['polymer', ['test']])
-    .map(set => {
+    .map(args => {
       return new Promise(resolve => {
-        const child = spawn(set[0], set[1])
-        child.stdout.pipe(process.stdout)
-        child.stderr.pipe(process.stderr)
-        child.on('exit', resolve)
+        spawn(args[0], args[1], { stdio: 'inherit' }).on('exit', resolve)
       })
     })
 
   return Promise.all(tasks)
     .then(exitCodes => {
-      if (exitCodes.every(result => result === 0))
-        return true
-      else
+      if (!exitCodes.every(result => result === 0))
         throw new Error('Some tests have failed')
+
+      return
     })
 }
 
