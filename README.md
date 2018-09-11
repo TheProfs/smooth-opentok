@@ -50,7 +50,7 @@ since the SSL certificates are specifically made for `localhost`.
 
 ## Running Tests
 
-Ensure the credentials server (mentioned above) is running, then:
+Ensure any running credentials server instances are shut down, then:
 
 ```
 $ npm install -g mocha
