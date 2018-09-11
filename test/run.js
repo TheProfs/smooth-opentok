@@ -1,6 +1,7 @@
 'use strict'
 
 const spawn = require('child_process').spawn
+const credentialServer = require('./credentials-server/server.js')
 
 const spawnPolymerTest = ({ times = 2 }) => {
   const tasks = Array.from({ length: times }, () => ['polymer', ['test']])
@@ -20,6 +21,13 @@ const spawnPolymerTest = ({ times = 2 }) => {
 }
 
 describe('Test Suite', () => {
+  before(done => {
+    credentialServer.listen(3001, () => {
+      console.info('Credentials server started at', 3001)
+      done()
+    })
+  })
+
   it ('Runs OK under normal network conditions', function() {
     this.timeout(120000)
 

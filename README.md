@@ -5,7 +5,7 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans.
 ## Install prerequisites
 
 ```bash
-$ npm install -g polymer-cli
+$ npm install & npm install -g polymer-cli
 ```
 
 ## Trust the local SSL certificate
@@ -22,22 +22,18 @@ screen-sharing without extensions.
 
 ## Start a credentials server
 
-You need to setup a server that returns OpenTok/Tokbox credentials, using one
-of the [OpenTok Server SDK's][opentok-server-sdks].
+There's a [NodeJS][node-js] credentials server which serves OpenTok credentials
+using the [OpenTok Server SDK's][opentok-server-sdks].
 
-The element `/demo` page is configured to fetch credentials by sending a `POST`
-request to https://localhost:5003/api/v1/rtc-session/[session-name], where
-`[session-name]` should be replaced with the name of the session you wish to
-connect to.
+You can start it with:
 
-This URL is configurable by setting the `getRtcTokenUrl` attribute/property on
-the element, for example:
-
-```html
-<smooth-opentok
-  get-rtc-token-url="https://my-server.com/rtc-session/foo-session">
-</smooth-opentok>
+```bash
+# You need a TokBox account in order to retrieve an actual API key and secret.
+$ npm run credentials-server -- --opentok-api-key="your-api-key" --opentok-api-secret="your-api-token"
 ```
+
+**Important:** When running the tests, this server is automatically started so
+make sure you shut down any running instances of it before running the tests.
 
 ## Run the element
 
@@ -58,7 +54,7 @@ Ensure the credentials server (mentioned above) is running, then:
 
 ```
 $ npm install -g mocha
-$ npm test
+$ npm test -- --opentok-api-key="your-api-key" --opentok-api-secret="your-api-token"
 ```
 
 ## Authors
@@ -70,3 +66,4 @@ $ npm test
 [opentok-server-sdks]: https://tokbox.com/developer/sdks/server/
 [nicholaswmin]: https://github.com/nicholaswmin
 [the-profs]: https://github.com/TheProfs
+[node-js]: https://nodejs.org/en/
