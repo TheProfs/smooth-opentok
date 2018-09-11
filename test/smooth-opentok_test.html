@@ -23,29 +23,29 @@
     <script>
       chai.should()
 
+      let element
+
+      beforeEach(() => {
+        element = fixture('basic')
+      })
+
       describe('Element instantiation', () => {
         it('instantiating the element works', () => {
-          const element = fixture('basic')
-
           assert.equal(element.is, 'smooth-opentok')
         })
       })
 
-      describe('Starts a call', function() {
+      describe('Calls', function() {
         this.timeout(60000)
 
-        let element
-
         beforeEach(function(done) {
-          element = fixture('basic')
-
           element.addEventListener('session-changed', function cb(e) {
             e.currentTarget.removeEventListener(e.type, cb)
 
             element.addEventListener('streams-changed', function cb(e) {
               if (e.detail.path !== 'streams.length') return
 
-              if (element.streams.length === 2) {
+              if (element.streams.length > 1) {
                 e.currentTarget.removeEventListener(e.type, cb)
                 return done()
               }
@@ -62,19 +62,34 @@
 
         afterEach(done => {
           // @NOTE
-          // Wait for the other client to create his video element
+          // Wait for the other client to subscribe/destroy the stream
           // and run his tests before moving on.
-          setTimeout(() => done(), 3000)
+          setTimeout(() => done(), 5000)
         })
 
-        it('eventually ends up with exactly 2 streams', () => {
-          element.streams.should.have.length(2)
+        describe('#startCall()', function() {
+          it('eventually ends up with exactly 2 streams', () => {
+            element.streams.should.have.length(2)
+          })
+
+          it('should have a <video> element property for each stream', () => {
+            element.streams.forEach(stream => {
+              stream.element.should.be.ok
+              stream.element.constructor.name.should.equal('HTMLVideoElement')
+            })
+          })
         })
 
-        it('should have a <video> element property for each stream', () => {
-          element.streams.forEach(stream => {
-            stream.element.should.be.ok
-            stream.element.constructor.name.should.equal('HTMLVideoElement')
+        describe('#stopCall()', function() {
+          it('eventually ends up with 0 streams', done => {
+            element.addEventListener('streams-changed', function cb(e) {
+              if (element.streams.length === 0) {
+                e.currentTarget.removeEventListener(e.type, cb)
+                return done()
+              }
+            })
+
+            element.stopCall()
           })
         })
       })
