@@ -60,5 +60,13 @@ $ polymer test
 Your application is already set up to be tested via [web-component-tester](https://github.com/Polymer/web-component-tester).
 Run `polymer test` to run your application's test suite locally.
 
+
+## Authors
+
+- Nicholas Kyriakides, [@nicholaswmin][nicholaswmin]
+- [TheProfs][the-profs](Owners)
+
 [trust-self-signed-ssl-macos]: https://tosbourn.com/getting-os-x-to-trust-self-signed-ssl-certificates/
 [opentok-server-sdks]: https://tokbox.com/developer/sdks/server/
+[nicholaswmin]: https://github.com/nicholaswmin
+[the-profs]: https://github.com/TheProfs
