@@ -92,6 +92,22 @@
             element.stopCall()
           })
         })
+
+        describe('#startScreenSharing()', function() {
+          describe('without extension installed', () => {
+            it('fires a request-screen-share-extension-installation event',
+              done => {
+                element.addEventListener(
+                  'request-screen-share-extension-installation',
+                  function cb(e) {
+                    e.currentTarget.removeEventListener(e.type, cb)
+                    return done()
+                  })
+
+                element.startScreenSharing()
+            })
+          })
+        })
       })
     </script>
   </body>
