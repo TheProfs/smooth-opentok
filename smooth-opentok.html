@@ -1,7 +1,6 @@
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../iron-ajax/iron-ajax.html">
 
-<link rel="import" href="video-stream.html">
 <script src="https://static.opentok.com/v2/js/opentok.min.js"></script>
 
 <!--
@@ -28,19 +27,6 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       on-response="_handleCredentialRetrieval"
       on-error="_handleCredentialRetrievalError">
     </iron-ajax>
-
-    <!--@TODO
-      Remove this it's only for dev purposes.
-      This element should render nothing, it only publishes it's properties.
-      `<video-stream>`s should be rendered externally.
-    -->
-    <template is="dom-repeat" items="{{streams}}">
-      <video-stream
-        stream="{{item}}"
-        on-request-fullscreen="_makeFullScreen">
-      </video-stream>
-    </template>
-    <!--/@TODO-->
   </template>
 
   <script>

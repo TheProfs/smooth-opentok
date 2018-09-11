@@ -11,6 +11,7 @@
     <link rel="import" href="../../iron-demo-helpers/demo-pages-shared-styles.html">
     <link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
     <link rel="import" href="../smooth-opentok.html">
+    <link rel="import" href="../video-stream.html">
 
     <style is="custom-style" include="demo-pages-shared-styles">
     </style>
@@ -19,9 +20,21 @@
     <div class="vertical-section-container centered">
       <h3>Basic smooth-opentok demo</h3>
       <demo-snippet>
-        <template>
+        <template is="dom-bind">
+          <style>
+            video-stream {
+              width: 150px;
+              height: 200px;
+            }
+          </style>
+
+          <template is="dom-repeat" items="{{streams}}">
+            <video-stream stream="{{item}}"></video-stream>
+          </template>
+
           <smooth-opentok
-            get-rtc-token-url="https://localhost:5003/api/v1/rtc-session/Hk2Ku6X_X">
+            get-rtc-token-url="https://localhost:5003/api/v1/rtc-session/Hk2Ku6X_X"
+            streams="{{streams}}">
           </smooth-opentok>
         </template>
       </demo-snippet>
