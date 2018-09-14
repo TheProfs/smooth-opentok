@@ -133,9 +133,10 @@ An individual video stream element
       ready: function() {
         this._attachDragListeners()
         this._attachResizeListeners()
+        this.init()
       },
 
-      attached: function() {
+      init: function() {
         Polymer.dom(this.$.video).appendChild(this.stream.element)
       },
 
