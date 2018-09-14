@@ -84,7 +84,7 @@ An individual video stream element
       <div class="top-controls">
         <paper-icon-button
           icon="aspect-ratio"
-          on-tap="_requestFullscreen">
+          on-tap="_requestPrincipal">
         </paper-icon-button>
 
         <paper-icon-button
@@ -217,8 +217,8 @@ An individual video stream element
         })
       },
 
-      _requestFullscreen: function() {
-        this.fire('request-fullscreen')
+      _requestPrincipal: function() {
+        this.fire('request-principal')
       },
 
       _toggleAudio: function() {
