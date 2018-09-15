@@ -1,6 +1,7 @@
-<link rel="import" href="../polymer/polymer.html">
-<link rel="import" href="../paper-icon-button/paper-icon-button.html">
-<link rel="import" href="../iron-icons/av-icons.html">
+<link rel="import" href="../../../polymer/polymer.html">
+<link rel="import" href="../../../paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../../iron-icons/av-icons.html">
+<link rel="import" href="../../../iron-icons/image-icons.html">
 
 <!--
 `video-stream`
@@ -16,7 +17,7 @@ An individual video stream element
         position: relative;
         display: inline-block;
         max-width: 100%;
-        min-width: 150px;
+        min-width: 240px;
         min-height: 120px;
         background: #111;
         text-align: center;
@@ -56,21 +57,22 @@ An individual video stream element
         text-align: left;
       }
 
-      #audio-cover,
       #video {
         position: relative;
         width: 100%;
         height: 100%;
       }
 
-      #audio-cover iron-icon {
-        position: absolute;
+      #audio-cover {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        height: 100%;
+      }
+
+      #audio-cover .icons-container {
         margin: auto;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        color: #009688;
+        color: #aaa;
       }
 
       #video video {
@@ -83,14 +85,25 @@ An individual video stream element
     <div id="handle" class="handle" draggable="true">
       <div class="top-controls">
         <paper-icon-button
-          icon="aspect-ratio"
+          icon="image:filter-center-focus"
           on-tap="_requestPrincipal">
         </paper-icon-button>
 
         <paper-icon-button
-          icon$="[[_computeMuteIcon(stream.hasAudio)]]"
+          icon="aspect-ratio"
+          on-tap="_requestFullScreenPrincipal">
+        </paper-icon-button>
+
+        <paper-icon-button
+          icon$="[[_computeMuteMicIcon(stream.hasAudio)]]"
+          on-tap="_toggleMic"
+          hidden$="[[_shouldHideMuteMicButton(stream)]]">
+        </paper-icon-button>
+
+        <paper-icon-button
+          icon$="[[_computeMuteAudioIcon(stream.isMuted)]]"
           on-tap="_toggleAudio"
-          hidden$="[[_shouldHideMuteButton(stream)]]">
+          hidden$="[[!stream.subscriber]]">
         </paper-icon-button>
 
         <paper-icon-button
@@ -101,15 +114,24 @@ An individual video stream element
       </div>
 
       <div id="audio-cover" hidden$="[[stream.hasVideo]]">
-        <iron-icon icon$="[[_computeMuteIcon(stream.hasAudio)]]"></iron-icon>
+        <div class="icons-container">
+          <iron-icon icon$="[[_computeMuteMicIcon(stream.hasAudio)]]"></iron-icon>
+          <iron-icon
+            hidden$="[[!stream.subscriber]]"
+            icon$="[[_computeMuteAudioIcon(stream.isMuted)]]">
+          </iron-icon>
+        </div>
       </div>
 
-      <div
+      <video
         id="video"
+        autoplay="true"
+        playsinline="true"
         hidden$="[[!stream.hasVideo]]"
         ondragstart="event.preventDefault();"
         draggable="true">
-      </div>
+        Sorry, Web RTC is not available in your browser
+      </video>
     </div>
   </template>
 
@@ -136,8 +158,25 @@ An individual video stream element
         this.init()
       },
 
+      // @HACK
+      // Because of a Chrome bug,
+      // see: https://bugs.chromium.org/p/chromium/issues/detail?id=382879,
+      // <video> elements that are moved up/down in DOM stop playing.
+      // This causes problems with `<template is="dom-repeat"></template>`
+      //
+      // If we reappend again it starts playing again. We expose this `init()`
+      // function in case the element is used in a
+      // `<template is="dom-repeat"></template>` so user code can call
+      // `videoStream.init()` in case the
+      // `<template is="dom-repeat"></template>` is re-rendered, i.e in case it
+      // does `sort` or `filter`.
+      //
+      // When this is fixed in Chromium, this method shouldn't be needed at all,
+      // and the current `init()` code can happen just *once* in the
+      // `attached()` method of this element, regardless if it's used in a
+      // <template is="dom-repeat"></template> or not.
       init: function() {
-        Polymer.dom(this.$.video).appendChild(this.stream.element)
+        this.$.video.srcObject = this.stream.element.srcObject
       },
 
       setDownPoint: function({ x, y }) {
@@ -222,23 +261,36 @@ An individual video stream element
         this.fire('request-principal')
       },
 
-      _toggleAudio: function() {
+      _requestFullScreenPrincipal: function() {
+        this.fire('request-fullscreen-principal')
+      },
+
+      _toggleMic: function() {
         this.stream.publisher.publishAudio(!this.stream.hasAudio)
+      },
+
+      _toggleAudio: function() {
+        this.stream.subscriber.setAudioVolume(this.stream.isMuted ? 100 : 0)
+        this.set('stream.isMuted', !this.stream.isMuted)
       },
 
       _toggleVideo: function() {
         this.stream.publisher.publishVideo(!this.stream.hasVideo)
       },
 
-      _computeMuteIcon: function(hasAudio) {
+      _computeMuteMicIcon: function(hasAudio) {
         return hasAudio ? 'av:mic' : 'av:mic-off'
+      },
+
+      _computeMuteAudioIcon: function(isMuted) {
+        return isMuted ? 'av:volume-off' : 'av:volume-up'
       },
 
       _computeVideoIcon: function(hasVideo) {
         return hasVideo ? 'av:videocam' : 'av:videocam-off'
       },
 
-      _shouldHideMuteButton: function(stream) {
+      _shouldHideMuteMicButton: function(stream) {
         return !stream.publisher || stream.videoType === 'screen'
       },
 
