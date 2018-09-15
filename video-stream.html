@@ -164,8 +164,8 @@ An individual video stream element
       // <video> elements that are moved up/down in DOM stop playing.
       // This causes problems with `<template is="dom-repeat"></template>`
       //
-      // If we reappend again it starts playing again. We expose this `init()`
-      // function in case the element is used in a
+      // If we call `init()` again it starts playing again. We expose this
+      // `init()` function in case the element is used in a
       // `<template is="dom-repeat"></template>` so user code can call
       // `videoStream.init()` in case the
       // `<template is="dom-repeat"></template>` is re-rendered, i.e in case it
