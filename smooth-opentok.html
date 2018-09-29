@@ -119,8 +119,6 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       },
 
       startCall: function() {
-        // @FIXME
-        // stop call -> start call creates a 2nd redundant publisher. FIX!
         return this._createPublisher('camera')
          .then(() => {
            return this._subscribeToUnsubscribedStreams()
@@ -175,7 +173,7 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
         if (!this.session.isConnected())
           throw new Error('Session not connected yet. Has init() resolved?')
 
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
           const publisher = OT.initPublisher(null, {
             videoSource: videoSource === 'camera' ? undefined : videoSource,
             publishVideo: videoSource === 'camera' ? false : undefined,
@@ -198,7 +196,7 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
           })
 
           this.session.publish(publisher, err => {
-            if (err) return console.error(err)
+            if (err) return reject(err)
           })
         })
       },
