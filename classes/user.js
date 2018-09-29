@@ -1,13 +1,16 @@
 'use strict'
 
 class User {
-  constructor(name) {
+  constructor(name, toggleVideo, toggleScreenShare) {
     this.name = name
     this.isConnected = false
     this.streams = {
       screen: null,
       camera: null
     }
+
+    this.toggleVideo = toggleVideo
+    this.toggleScreenShare = toggleScreenShare
   }
 
   isPublisher() {
