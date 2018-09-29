@@ -3,6 +3,7 @@
 class User {
   constructor(name) {
     this.name = name
+    this.isConnected = false
     this.streams = {
       screen: null,
       camera: null

@@ -16,7 +16,7 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       id="repeater"
       is="dom-repeat"
       items="{{users}}">
-      <video-stream user="{{item}}"></video-stream>
+      <video-stream user="{{item}}" hidden$="[[!item.isConnected]]"></video-stream>
     </template>
   </template>
 
@@ -87,7 +87,10 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
 
         this.session.on('streamCreated', e => {
           this._upsertStreamToUser(e.stream)
-          this._subscribeToUnsubscribedStreams()
+
+          if (this._iAmInCall()) {
+            this._subscribeToUnsubscribedStreams()
+          }
         })
 
         this.session.on('streamDestroyed', e => {
@@ -113,11 +116,11 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       },
 
       stopCall: function() {
-        // @TODO
+        this._unsubscribeFromAllStreams()
       },
 
       publishVideo: function() {
-        const me = this.users.find(user => user.name === this.idUser)
+        const me = this._findMe()
 
         me.streams.camera.publisher.publishVideo(true)
 
@@ -143,7 +146,8 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       },
 
       stopScreenSharing: function() {
-        const me = this.users.find(user => user.name === this.idUser)
+        const me = this._findMe()
+
         this.session.unpublish(me.streams.screen.publisher)
       },
 
@@ -154,7 +158,7 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
         return new Promise((resolve) => {
           const publisher = OT.initPublisher(null, {
             videoSource: videoSource === 'camera' ? undefined : videoSource,
-            publishVideo: true,
+            publishVideo: false,
             insertDefaultUI: false,
             name: this.idUser
           }, err => {
@@ -192,10 +196,12 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
 
         this.set(`users.${i}.streams.${stream.videoType}`, stream)
 
-        const isMe = this.users[i].name === this.idUser
+        if (this._isMe(user)) {
+          this.set(`users.${i}.isConnected`, true)
+        }
 
-        if (stream.videoType === 'screen' && isMe) {
-          const me = this.users.find(user => user.name === this.idUser)
+        if (stream.videoType === 'screen' && this._isMe(user)) {
+          const me = this._findMe()
           me.streams.camera.publisher.publishVideo(false)
         }
       },
@@ -209,11 +215,14 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
             break;
           case 'screen':
             const j = this.users.findIndex(item => item.name === stream.name)
+
+            if (j === -1) return
+
             const isMe = this.users[j].name === this.idUser
             this.set(`users.${j}.streams.${stream.videoType}`, null)
 
             if (isMe) {
-              const me = this.users.find(user => user.name === this.idUser)
+              const me = this._findMe()
               me.streams.camera.publisher.publishVideo(true)
             }
             break;
@@ -275,15 +284,34 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
             if (user.streams.hasOwnProperty(key) && user.streams[key]) {
               const stream = user.streams[key]
 
-              if (stream.srcObject) continue
+              if (stream.publisher) continue
 
-              const srcObject = await this._getSrcObjectForSubscribingStream(stream)
+              const result = await this._getSrcObjectForSubscribingStream(stream)
               const i = this.users.findIndex(user => user.name === stream.name)
 
-              this.set(`users.${i}.streams.${stream.videoType}.srcObject`, srcObject)
+              this.set(`users.${i}.streams.${stream.videoType}.srcObject`, result.srcObject)
+              this.set(`users.${i}.streams.${stream.videoType}.subscriber`, result.subscriber)
             }
           }
+
+          this.set(`users.${i}.isConnected`, true)
         }
+      },
+
+      _unsubscribeFromAllStreams: function() {
+        this.users.forEach((user, i) => {
+          Object.values(user.streams)
+            .filter(stream => stream)
+            .forEach(stream => {
+              if (this._isMe(user)) {
+                this.session.unpublish(stream.publisher)
+              } else {
+                this.session.unsubscribe(stream.subscriber)
+              }
+            })
+
+          this.set(`users.${i}.isConnected`, false)
+        })
       },
 
       _getSrcObjectForSubscribingStream: function(stream) {
@@ -295,7 +323,14 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
           })
 
           subscriber.once('videoElementCreated', e => {
-            resolve(e.element.srcObject)
+            const subscribers = this.session.getSubscribersForStream(
+              subscriber.stream
+            )
+
+            resolve({
+              srcObject: e.element.srcObject,
+              subscriber: subscribers.length ? subscribers[0] : undefined
+            })
           })
         })
       },
@@ -316,6 +351,18 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
           }, null)
 
         return streamKey ? `users.${userIndex}.streams.${streamKey}` : false
+      },
+
+      _findMe: function() {
+        return this.users.find(user => user.name === this.idUser)
+      },
+
+      _isMe: function(user) {
+        return user.name === this.idUser
+      },
+
+      _iAmInCall: function() {
+        return this._findMe()
       }
     });
   </script>
