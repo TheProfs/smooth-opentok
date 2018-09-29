@@ -1,7 +1,4 @@
-<link rel="import" href="../../../polymer/polymer.html">
-<link rel="import" href="../../../paper-icon-button/paper-icon-button.html">
-<link rel="import" href="../../../iron-icons/av-icons.html">
-<link rel="import" href="../../../iron-icons/image-icons.html">
+<link rel="import" href="../polymer/polymer.html">
 
 <!--
 `video-stream`
@@ -16,120 +13,31 @@ An individual video stream element
       :host {
         position: relative;
         display: inline-block;
-        max-width: 100%;
-        min-width: 240px;
-        min-height: 120px;
-        background: #111;
-        text-align: center;
-        overflow: visible;
+        border: 2px solid red;
       }
 
-      [hidden] {
-        display: none !important;
-      }
-
-      .resize-handle {
-        position: absolute;
-        width: 15px;
-        height: 15px;
-        bottom: 0;
-        right: 0;
-        background: #999;
-        z-index: 99;
-        cursor: nwse-resize;
-      }
-
-      .handle {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        padding-top: 40px;
-        height: calc(100% - 40px);
-        cursor: move;
-      }
-
-      .top-controls {
-        position: absolute;
-        background: #009688;
-        top: 0;
-        height: 40px;
-        width: 100%;
-        text-align: left;
-      }
-
+      #screenshare,
       #video {
-        position: relative;
-        width: 100%;
-        height: 100%;
-      }
-
-      #audio-cover {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-        height: 100%;
-      }
-
-      #audio-cover .icons-container {
-        margin: auto;
-        color: #aaa;
-      }
-
-      #video video {
         width: 100%;
         height: 100%;
       }
     </style>
 
-    <div id="resizeHandle" class="resize-handle"></div>
-    <div id="handle" class="handle" draggable="true">
-      <div class="top-controls">
-        <paper-icon-button
-          icon="image:filter-center-focus"
-          on-tap="_requestPrincipal">
-        </paper-icon-button>
-
-        <paper-icon-button
-          icon="aspect-ratio"
-          on-tap="_requestFullScreenPrincipal">
-        </paper-icon-button>
-
-        <paper-icon-button
-          icon$="[[_computeMuteMicIcon(stream.hasAudio)]]"
-          on-tap="_toggleMic"
-          hidden$="[[_shouldHideMuteMicButton(stream)]]">
-        </paper-icon-button>
-
-        <paper-icon-button
-          icon$="[[_computeMuteAudioIcon(stream.isMuted)]]"
-          on-tap="_toggleAudio"
-          hidden$="[[!stream.subscriber]]">
-        </paper-icon-button>
-
-        <paper-icon-button
-          icon$="[[_computeVideoIcon(stream.hasVideo)]]"
-          on-tap="_toggleVideo"
-          hidden$="[[_shouldHideVideoButton(stream)]]">
-        </paper-icon-button>
-      </div>
-
-      <div id="audio-cover" hidden$="[[stream.hasVideo]]">
-        <div class="icons-container">
-          <iron-icon icon$="[[_computeMuteMicIcon(stream.hasAudio)]]"></iron-icon>
-          <iron-icon
-            hidden$="[[!stream.subscriber]]"
-            icon$="[[_computeMuteAudioIcon(stream.isMuted)]]">
-          </iron-icon>
-        </div>
-      </div>
+      <video
+        id="screenshare"
+        autoplay="true"
+        playsinline="true"
+        draggable="true"
+        hidden$="[[!user.streams.screen]]">
+        Sorry, Web RTC is not available in your browser
+      </video>
 
       <video
         id="video"
         autoplay="true"
         playsinline="true"
-        hidden$="[[!stream.hasVideo]]"
-        ondragstart="event.preventDefault();"
-        draggable="true">
+        draggable="true"
+        hidden$="[[user.streams.screen]]">
         Sorry, Web RTC is not available in your browser
       </video>
     </div>
@@ -141,161 +49,30 @@ An individual video stream element
       is: 'video-stream',
 
       properties: {
-        stream: {
+        user: {
           type: Object
-        },
-
-        dragging: {
-          type: Boolean,
-          value: false,
-          reflectToAttribute: true
         }
       },
 
       ready: function() {
-        this._attachDragListeners()
-        this._attachResizeListeners()
-        this.init()
+
       },
 
-      // @HACK
-      // Because of a Chrome bug,
-      // see: https://bugs.chromium.org/p/chromium/issues/detail?id=382879,
-      // <video> elements that are moved up/down in DOM stop playing.
-      // This causes problems with `<template is="dom-repeat"></template>`
-      //
-      // If we call `init()` again it starts playing again. We expose this
-      // `init()` function in case the element is used in a
-      // `<template is="dom-repeat"></template>` so user code can call
-      // `videoStream.init()` in case the
-      // `<template is="dom-repeat"></template>` is re-rendered, i.e in case it
-      // does `sort` or `filter`.
-      //
-      // When this is fixed in Chromium, this method shouldn't be needed at all,
-      // and the current `init()` code can happen just *once* in the
-      // `attached()` method of this element, regardless if it's used in a
-      // <template is="dom-repeat"></template> or not.
-      init: function() {
-        this.$.video.srcObject = this.stream.element.srcObject
+      observers: [
+        '_toggleScreenshare(user.streams.screen.srcObject)',
+        '_toggleCamera(user.streams.camera.srcObject)'
+      ],
+
+      _toggleScreenshare: function(srcObject) {
+        if (!srcObject) return
+
+        this.$.screenshare.srcObject = srcObject
       },
 
-      setDownPoint: function({ x, y }) {
-        const bbox = this.getBoundingClientRect()
-        this.set('dragDownPoint', { x: x - bbox.x , y: y - bbox.y })
-      },
+      _toggleCamera: function(srcObject) {
+        if (!srcObject) return
 
-      reset: function() {
-        this.removeAttribute('style')
-      },
-
-      resetPosition: function() {
-        this.style.position = 'inline-block'
-        this.style.left = `auto`
-        this.style.top = `auto`
-      },
-
-      setPosition: function({ x, y }) {
-        this.style.position = 'fixed'
-        this.style.left = `${x - this.dragDownPoint.x}px`
-        this.style.top = `${y - this.dragDownPoint.y}px`
-      },
-
-      _attachDragListeners: function() {
-        this.$.handle.domHost = this
-
-        this.addEventListener('dragstart', e => {
-          const bbox = this.getBoundingClientRect()
-
-          this.style.width = `${bbox.width}px`
-          this.style.height = `${bbox.height}px`
-        })
-
-        this.addEventListener('drag', e => {
-          this.set('dragging', true)
-        })
-
-        this.addEventListener('dragend', e => {
-          this.set('dragging', false)
-        })
-      },
-
-      _attachResizeListeners: function() {
-        this.$.resizeHandle.addEventListener('mousedown', e => {
-          const resizeHandleBBox = this.$.resizeHandle.getBoundingClientRect()
-
-          this.set('resizeDownPoint', {
-            x: resizeHandleBBox.x + resizeHandleBBox.width / 2,
-            y: resizeHandleBBox.y + resizeHandleBBox.height / 2
-          })
-
-          this.isResizing = true
-        })
-
-        window.addEventListener('mouseup', e => {
-          this.isResizing = false
-        })
-
-        window.addEventListener('mousemove', e => {
-          if (!this.isResizing) return
-
-          const bbox = this.getBoundingClientRect()
-
-          const delta = {
-            x: e.clientX - this.resizeDownPoint.x,
-            y: e.clientY - this.resizeDownPoint.y
-          }
-
-          this.style.width = `${bbox.width + delta.x}px`
-          this.style.height = `${bbox.height + delta.y}px`
-
-          const resizeHandleBBox = this.$.resizeHandle.getBoundingClientRect()
-
-          this.set('resizeDownPoint', {
-            x: resizeHandleBBox.x + resizeHandleBBox.width / 2,
-            y: resizeHandleBBox.y + resizeHandleBBox.height / 2
-          })
-        })
-      },
-
-      _requestPrincipal: function() {
-        this.fire('request-principal')
-      },
-
-      _requestFullScreenPrincipal: function() {
-        this.fire('request-fullscreen-principal')
-      },
-
-      _toggleMic: function() {
-        this.stream.publisher.publishAudio(!this.stream.hasAudio)
-      },
-
-      _toggleAudio: function() {
-        this.stream.subscriber.setAudioVolume(this.stream.isMuted ? 100 : 0)
-        this.set('stream.isMuted', !this.stream.isMuted)
-      },
-
-      _toggleVideo: function() {
-        this.stream.publisher.publishVideo(!this.stream.hasVideo)
-      },
-
-      _computeMuteMicIcon: function(hasAudio) {
-        return hasAudio ? 'av:mic' : 'av:mic-off'
-      },
-
-      _computeMuteAudioIcon: function(isMuted) {
-        return isMuted ? 'av:volume-off' : 'av:volume-up'
-      },
-
-      _computeVideoIcon: function(hasVideo) {
-        return hasVideo ? 'av:videocam' : 'av:videocam-off'
-      },
-
-      _shouldHideMuteMicButton: function(stream) {
-        return !stream.publisher || stream.videoType === 'screen'
-      },
-
-      _shouldHideVideoButton: function(stream) {
-        return !stream.publisher || stream.videoType === 'screen'
+        this.$.video.srcObject = srcObject
       }
     })
   </script>

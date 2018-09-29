@@ -23,19 +23,22 @@
         <template is="dom-bind">
           <style>
             video-stream {
-              width: 150px;
-              height: 200px;
+              margin: 6px;
             }
           </style>
-
-          <template is="dom-repeat" items="{{streams}}">
-            <video-stream stream="{{item}}"></video-stream>
-          </template>
-
           <smooth-opentok
             get-rtc-token-url="http://localhost:3001/credentials/demo-session"
-            streams="{{streams}}">
+            users="{{users}}">
           </smooth-opentok>
+
+          <script>
+            document.addEventListener('WebComponentsReady', e => {
+              document.querySelector('smooth-opentok')
+                .init()
+                .then(console.log)
+                .catch(console.error)
+            })
+          </script>
         </template>
       </demo-snippet>
     </div>

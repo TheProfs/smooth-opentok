@@ -1,7 +1,7 @@
 <link rel="import" href="../polymer/polymer.html">
-<link rel="import" href="../iron-ajax/iron-ajax.html">
 
 <script src="https://static.opentok.com/v2/js/opentok.min.js"></script>
+<script src="classes/user.js"></script>
 
 <!--
 `smooth-opentok`
@@ -12,14 +12,12 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
 
 <dom-module id="smooth-opentok">
   <template>
-    <iron-ajax
-      id="rtcSessionAjax"
-      method="POST"
-      url="[[getRtcTokenUrl]]"
-      last-response="{{credentials}}"
-      on-response="_handleCredentialRetrieval"
-      on-error="_handleCredentialRetrievalError">
-    </iron-ajax>
+    <template
+      id="repeater"
+      is="dom-repeat"
+      items="{{users}}">
+      <video-stream user="{{item}}"></video-stream>
+    </template>
   </template>
 
   <script>
@@ -28,30 +26,20 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       is: 'smooth-opentok',
 
       properties: {
+        users: {
+          type: Array,
+          value: function() {
+            return []
+          },
+          notify: true
+        },
+
         getRtcTokenUrl: {
           type: String
         },
 
         session: {
           type: Object,
-          notify: true
-        },
-
-        publisher: {
-          type: Object,
-          notify: true
-        },
-
-        screenSharingPublisher: {
-          type: Object,
-          notify: true
-        },
-
-        streams: {
-          type: Array,
-          value: function() {
-            return []
-          },
           notify: true
         },
 
@@ -69,7 +57,7 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
             return [
               {
                 browser: 'chrome',
-                id: 'hepbcpneegopippbnilnpimiminkhdca',
+                id: 'nfiighcfoehnhiapoaonedebnoigkieo',
                 version: 2
               }
             ]
@@ -87,103 +75,176 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
 
       attached: function() {
         window.smoothOpentok = this
-        this.$.rtcSessionAjax.generateRequest()
+        this.idUser = Math.random().toString()
+      },
+
+      init: async function(credentials) {
+        this.set('credentials', await this._fetchCredentials(this.getRtcTokenUrl))
+        this.set('session', OT.initSession(
+          this.credentials.api_key,
+          this.credentials.session_id
+        ))
+
+        this.session.on('streamCreated', e => {
+          this._upsertStreamToUser(e.stream)
+          this._subscribeToUnsubscribedStreams()
+        })
+
+        this.session.on('streamDestroyed', e => {
+          this._removeUser(e.stream)
+        })
+
+        this.session.on('streamPropertyChanged', e => {
+          const path = this._getStreamPathById(e.stream.id)
+
+          if (!path) return
+
+          this.set(`${path}.${e.changedProperty}`, e.newValue)
+        })
+
+        return this._connectToSession(this.session, this.credentials.token)
       },
 
       startCall: function() {
-        this.set('publisher', this._createPublisher('camera'))
+        return this._createPublisher('camera')
+         .then(() => {
+           return this._subscribeToUnsubscribedStreams()
+         })
       },
 
       stopCall: function() {
-        this.session.disconnect()
-        this.set('streams', [])
+        // @TODO
+      },
+
+      publishVideo: function() {
+        const me = this.users.find(user => user.name === this.idUser)
+
+        me.streams.camera.publisher.publishVideo(true)
+
+        if (me.streams.screen) {
+          this.stopScreenSharing()
+        }
       },
 
       startScreenSharing: function() {
         this._setScreenSharingCapability()
 
         if (!this.screenSharingCapability.supported) {
-          return this._handleCustomRTCError({
-            code: 0,
-            message: 'Screen-sharing not supported on this browser'
-          })
+          throw new Error('Screen-sharing not supported on this browser')
         } else if (!this.screenSharingCapability.extensionRegistered) {
-          return this._handleCustomRTCError({
-            code: 0,
-            message: 'Extension not registered'
-          })
+          throw new Error('Extension not registered')
         } else if (this.screenSharingCapability.extensionRequired &&
             !this.screenSharingCapability.extensionInstalled) {
           console.info('Requesting screen share extension installation...')
           return this.fire('request-screen-share-extension-installation')
         }
 
-        this.set('screenSharingPublisher', this._createPublisher('screen'))
+        return this._createPublisher('screen')
       },
 
       stopScreenSharing: function() {
-        this.session.unpublish(this.screenSharingPublisher)
+        const me = this.users.find(user => user.name === this.idUser)
+        this.session.unpublish(me.streams.screen.publisher)
       },
 
-      _createPublisher: function(videoSource = 'camera') {
-        const publisher = OT.initPublisher(null, {
-          videoSource: videoSource === 'camera' ? undefined : videoSource,
-          publishVideo: videoSource === 'camera' ? false : undefined,
-          insertDefaultUI: false
-        }, this._handleRTCError.bind(this))
+      _createPublisher: async function(videoSource = 'camera') {
+        if (!this.session.isConnected())
+          throw new Error('Session not connected yet. Has init() resolved?')
 
-        if (this.session.isConnected()) {
-          this.session.publish(publisher, this._handleRTCError.bind(this))
-        } else {
-          this.session.connect(this.credentials.token, err => {
-            if (err) return this._handleRTCError(error)
-
-            this.session.publish(publisher, this._handleRTCError.bind(this))
+        return new Promise((resolve) => {
+          const publisher = OT.initPublisher(null, {
+            videoSource: videoSource === 'camera' ? undefined : videoSource,
+            publishVideo: true,
+            insertDefaultUI: false,
+            name: this.idUser
+          }, err => {
+            if (err) return reject(err)
           })
+
+          publisher.on('streamDestroyed', e => {
+            this._removeUser(e.stream)
+          })
+
+          publisher.on('videoElementCreated', e => {
+            publisher.on('streamCreated', () => {
+              this._upsertStreamToUser(publisher.stream)
+              this._setUserAsSubscribed(publisher.stream, e.element.srcObject)
+              resolve()
+            })
+          })
+
+          this.session.publish(publisher, err => {
+            if (err) return console.error(err)
+          })
+        })
+      },
+
+      _upsertStreamToUser: function(stream) {
+        const existing = this.users.find(user => user.name === stream.name)
+
+        const user = existing ? existing : new User(stream.name)
+
+        if (!existing) {
+          this.push('users', user)
         }
 
-        publisher.on('videoElementCreated', e => {
-          publisher.on('streamCreated', () => {
-            this.push('streams', Object.assign(publisher.stream, {
-              element: e.element
-            }))
-          })
-        })
+        const i = this.users.findIndex(user => user.name === stream.name)
 
-        publisher.on('streamDestroyed', e => {
-          const i = this.streams.findIndex(item => item.id === e.stream.id)
-          this.splice('streams', i, 1)
-        })
+        this.set(`users.${i}.streams.${stream.videoType}`, stream)
 
-        return publisher
+        const isMe = this.users[i].name === this.idUser
+
+        if (stream.videoType === 'screen' && isMe) {
+          const me = this.users.find(user => user.name === this.idUser)
+          me.streams.camera.publisher.publishVideo(false)
+        }
       },
 
-      _initSession: function(credentials) {
-        this.set('session', OT.initSession(
-          credentials.api_key,
-          credentials.session_id
-        ))
+      _removeUser: function(stream) {
+        switch (stream.videoType) {
+          case 'camera':
+            const i = this.users.findIndex(item => item.name === stream.name)
 
-        this.session.on('streamCreated', e => {
-          const subscriber = this.session.subscribe(e.stream, null, {
-            insertDefaultUI: false
-          }, this._handleRTCError.bind(this))
+            this.splice('users', i, 1)
+            break;
+          case 'screen':
+            const j = this.users.findIndex(item => item.name === stream.name)
+            const isMe = this.users[j].name === this.idUser
+            this.set(`users.${j}.streams.${stream.videoType}`, null)
 
-          subscriber.on('videoElementCreated', e => {
-            this.push('streams', Object.assign(subscriber.stream, {
-              element: e.element
-            }))
+            if (isMe) {
+              const me = this.users.find(user => user.name === this.idUser)
+              me.streams.camera.publisher.publishVideo(true)
+            }
+            break;
+          default:
+            console.warn('Cannot determine stream type')
+        }
+      },
+
+      _setUserAsSubscribed: function(stream, srcObject) {
+        const i = this.users.findIndex(item => item.name === stream.name)
+
+        this.set(`users.${i}.streams.${stream.videoType}.srcObject`, srcObject)
+      },
+
+      _fetchCredentials: function(url) {
+        return fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8'
+          }
+        })
+        .then(response => response.json())
+      },
+
+      _connectToSession(session, token) {
+        return new Promise((resolve, reject) => {
+          session.connect(token, err => {
+            if (err) return reject(err)
+
+            resolve()
           })
-        })
-
-        this.session.on('streamDestroyed', e => {
-          const i = this.streams.findIndex(item => item.id === e.stream.id)
-          this.splice('streams', i, 1)
-        })
-
-        this.session.on('streamPropertyChanged', e => {
-          const i = this.streams.findIndex(item => item.id === e.stream.id)
-          this.set(`streams.${i}.${e.changedProperty}`, e.newValue)
         })
       },
 
@@ -204,25 +265,57 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
         })
       },
 
-      _handleCredentialRetrieval: function(e) {
-        this._initSession(e.detail.response)
+      _subscribeToUnsubscribedStreams: async function() {
+        for (let i = 0; i < this.users.length; i++) {
+          const user = this.users[i]
+
+          if (user.isPublisher()) continue
+
+          for (const key in user.streams) {
+            if (user.streams.hasOwnProperty(key) && user.streams[key]) {
+              const stream = user.streams[key]
+
+              if (stream.srcObject) continue
+
+              const srcObject = await this._getSrcObjectForSubscribingStream(stream)
+              const i = this.users.findIndex(user => user.name === stream.name)
+
+              this.set(`users.${i}.streams.${stream.videoType}.srcObject`, srcObject)
+            }
+          }
+        }
       },
 
-      _handleCredentialRetrievalError: function(err) {
-        return this._handleCustomRTCError({
-          code: 0,
-          message: err.detail.error.stack
+      _getSrcObjectForSubscribingStream: function(stream) {
+        return new Promise((resolve, reject) => {
+          const subscriber = this.session.subscribe(stream, null, {
+            insertDefaultUI: false
+          }, err => {
+            if (err) return reject(err)
+          })
+
+          subscriber.once('videoElementCreated', e => {
+            resolve(e.element.srcObject)
+          })
         })
       },
 
-      _handleCustomRTCError: function(err) {
-        return this._handleRTCError()
-      },
+      _getStreamPathById: function(streamId) {
+        const userIndex = this.users.findIndex(user =>
+          Object.values(user.streams)
+          .find(stream => stream && stream.id === streamId))
 
-      _handleRTCError: function(err) {
-        if (!err) return
+        if (userIndex === -1) return false
 
-        this.fire('error', err)
+        const streamKey =  Object.keys(this.users[userIndex].streams)
+          .filter(key => this.users[userIndex].streams[key])
+          .reduce((path, key) => {
+            return !path && this.users[userIndex].streams[key].id === streamId
+              ? key
+              : null
+          }, null)
+
+        return streamKey ? `users.${userIndex}.streams.${streamKey}` : false
       }
     });
   </script>
