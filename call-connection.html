@@ -110,25 +110,25 @@ Connection
         <paper-icon-button
           icon$="[[_computeMuteMicIcon(connection.streams.camera.hasAudio)]]"
           on-tap="_toggleMic"
-          hidden$="[[_shouldHideMuteMicButton(connection.streams.camera)]]">
+          hidden$="[[!connection.isMe]]">
         </paper-icon-button>
 
         <paper-icon-button
           icon$="[[_computeMuteAudioIcon(connection.streams.camera.isMuted)]]"
           on-tap="_toggleAudio"
-          hidden$="[[!connection.streams.camera.subscriber]]">
+          hidden$="[[connection.isMe]]">
         </paper-icon-button>
 
         <paper-icon-button
           icon$="[[_computeVideoIcon(connection.streams.camera.hasVideo)]]"
           on-tap="_toggleVideo"
-          hidden$="[[_shouldHideVideoButton(connection.streams.camera)]]">
+          hidden$="[[!connection.isMe]]">
         </paper-icon-button>
 
         <paper-icon-button
           icon$="[[_computeScreenShareIcon(connection.streams.screen)]]"
           on-tap="_toggleScreenshare"
-          hidden$="[[_shouldHideScreenShareButton(connection.streams.camera)]]">
+          hidden$="[[!connection.isMe]]">
         </paper-icon-button>
       </div>
 
@@ -349,15 +349,6 @@ Connection
 
       _computeScreenShareIcon: function(screenStream) {
         return screenStream ? 'communication:screen-share' : 'communication:stop-screen-share'
-      },
-
-      _shouldHideMuteMicButton: function(cameraStream) {
-        return cameraStream
-          && (!cameraStream.publisher || cameraStream.videoType === 'screen')
-      },
-
-      _shouldHideVideoButton: function(cameraStream) {
-        return cameraStream && (!cameraStream.publisher || cameraStream.videoType === 'screen')
       },
 
       _shouldHideScreenShareButton: function(cameraStream) {
