@@ -5,13 +5,13 @@
 <link rel="import" href="../iron-icons/image-icons.html">
 
 <!--
-`video-stream`
-An individual video stream element
+`call-connection`
 
-@demo demo/index.html
+Displays the video streams and controls for an individual smooth-opentok
+Connection
 -->
 
-<dom-module id="video-stream">
+<dom-module id="call-connection">
   <template>
     <style>
       :host {
@@ -71,6 +71,11 @@ An individual video stream element
         height: 100%;
       }
 
+      #audio-cover .info-label {
+        font-size: 12px;
+        color: #FF6D00;
+      }
+
       #audio-cover .icons-container {
         margin: auto;
         color: #aaa;
@@ -103,46 +108,49 @@ An individual video stream element
         </paper-icon-button>
 
         <paper-icon-button
-          icon$="[[_computeMuteMicIcon(user.streams.camera.hasAudio)]]"
+          icon$="[[_computeMuteMicIcon(connection.streams.camera.hasAudio)]]"
           on-tap="_toggleMic"
-          hidden$="[[_shouldHideMuteMicButton(user.streams.camera)]]">
+          hidden$="[[_shouldHideMuteMicButton(connection.streams.camera)]]">
         </paper-icon-button>
 
         <paper-icon-button
-          icon$="[[_computeMuteAudioIcon(user.streams.camera.isMuted)]]"
+          icon$="[[_computeMuteAudioIcon(connection.streams.camera.isMuted)]]"
           on-tap="_toggleAudio"
-          hidden$="[[!user.streams.camera.subscriber]]">
+          hidden$="[[!connection.streams.camera.subscriber]]">
         </paper-icon-button>
 
         <paper-icon-button
-          icon$="[[_computeVideoIcon(user.streams.camera.hasVideo)]]"
+          icon$="[[_computeVideoIcon(connection.streams.camera.hasVideo)]]"
           on-tap="_toggleVideo"
-          hidden$="[[_shouldHideVideoButton(user.streams.camera)]]">
+          hidden$="[[_shouldHideVideoButton(connection.streams.camera)]]">
         </paper-icon-button>
 
         <paper-icon-button
-          icon$="[[_computeScreenShareIcon(user.streams.screen)]]"
+          icon$="[[_computeScreenShareIcon(connection.streams.screen)]]"
           on-tap="_toggleScreenshare"
-          hidden$="[[_shouldHideScreenShareButton(user.streams.camera)]]">
+          hidden$="[[_shouldHideScreenShareButton(connection.streams.camera)]]">
         </paper-icon-button>
       </div>
 
-      <div id="audio-cover" hidden$="[[!doesNotPublishVideo]]">
+      <div id="audio-cover" hidden$="[[!shouldShowAudioCover]]">
+        <p class="info-label" hidden$="[[!connection.videoDisabledDueToQuality]]">
+          Video disabled due to slow network
+        </p>
         <div class="icons-container">
-          <iron-icon icon$="[[_computeMuteMicIcon(user.streams.camera.hasAudio)]]"></iron-icon>
+          <iron-icon icon$="[[_computeMuteMicIcon(connection.streams.camera.hasAudio)]]"></iron-icon>
           <iron-icon
-            hidden$="[[!user.streams.camera.subscriber]]"
-            icon$="[[_computeMuteAudioIcon(user.streams.camera.isMuted)]]">
+            hidden$="[[!connection.streams.camera.subscriber]]"
+            icon$="[[_computeMuteAudioIcon(connection.streams.camera.isMuted)]]">
           </iron-icon>
         </div>
       </div>
 
-      <div class="video-container" hidden$="[[doesNotPublishVideo]]">
+      <div class="video-container" hidden$="[[shouldShowAudioCover]]">
         <video
           id="screenshare"
           autoplay="true"
           playsinline="true"
-          hidden$="[[!user.streams.screen]]"
+          hidden$="[[!connection.streams.screen]]"
           ondragstart="event.preventDefault();"
           draggable="true">
           Sorry, Web RTC is not available in your browser
@@ -152,7 +160,7 @@ An individual video stream element
           id="video"
           autoplay="true"
           playsinline="true"
-          hidden$="[[user.streams.screen]]"
+          hidden$="[[connection.streams.screen]]"
           ondragstart="event.preventDefault();"
           draggable="true">
           Sorry, Web RTC is not available in your browser
@@ -164,16 +172,16 @@ An individual video stream element
   <script>
     Polymer({
 
-      is: 'video-stream',
+      is: 'call-connection',
 
       properties: {
-        user: {
+        connection: {
           type: Object
         },
 
-        doesNotPublishVideo: {
+        shouldShowAudioCover: {
           type: Boolean,
-          computed: '_doesNotPublishVideo(user.streams.*)'
+          computed: '_shouldShowAudioCover(connection.streams.*, connection.videoDisabledDueToQuality)'
         },
 
         dragging: {
@@ -184,12 +192,12 @@ An individual video stream element
       },
 
       observers: [
-        '_setScreenshareMediaTrack(user.streams.screen.srcObject)',
-        '_setCameraMediaTrack(user.streams.camera.srcObject)'
+        '_setScreenshareMediaTrack(connection.streams.screen.srcObject)',
+        '_setCameraMediaTrack(connection.streams.camera.srcObject)'
       ],
 
       ready: function() {
-        window.videoStream = this
+        window.callConnectionBox = this
         this._attachDragListeners()
         this._attachResizeListeners()
       },
@@ -284,11 +292,12 @@ An individual video stream element
         })
       },
 
-      _doesNotPublishVideo: function() {
-        return Object.values(this.user.streams)
-          .every(stream => {
-            return !stream || !stream.hasVideo
-          })
+      _shouldShowAudioCover: function(streams, videoDisabledDueToQuality) {
+        return videoDisabledDueToQuality ||
+          Object.values(this.connection.streams)
+            .every(stream => {
+              return !stream || !stream.hasVideo
+            })
       },
 
       _requestPrincipal: function() {
@@ -300,20 +309,30 @@ An individual video stream element
       },
 
       _toggleMic: function() {
-        this.user.streams.camera.publisher.publishAudio(!this.user.streams.camera.hasAudio)
+        this.connection
+          .streams.camera.publisher
+          .publishAudio(!this.connection.streams.camera.hasAudio)
       },
 
       _toggleAudio: function() {
-        this.user.streams.camera.subscriber.setAudioVolume(this.user.streams.camera.isMuted ? 100 : 0)
-        this.set('user.streams.camera.isMuted', !this.user.streams.camera.isMuted)
+        this.connection.streams.camera.subscriber.setAudioVolume(
+          this.connection.streams.camera.isMuted ? 100 : 0
+        )
+
+        this.set(
+          'connection.streams.camera.isMuted',
+          !this.connection.streams.camera.isMuted
+        )
       },
 
       _toggleVideo: function() {
-        this.user.toggleVideo(!this.user.streams.camera.hasVideo)
+        this.connection.toggleVideo(
+          !this.connection.streams.camera.hasVideo
+        )
       },
 
       _toggleScreenshare: function() {
-        this.user.toggleScreenShare()
+        this.connection.toggleScreenShare()
       },
 
       _computeMuteMicIcon: function(hasAudio) {
@@ -325,7 +344,7 @@ An individual video stream element
       },
 
       _computeVideoIcon: function(hasVideo) {
-        return hasVideo && !this.user.streams.screen ? 'av:videocam' : 'av:videocam-off'
+        return hasVideo ? 'av:videocam' : 'av:videocam-off'
       },
 
       _computeScreenShareIcon: function(screenStream) {
@@ -333,15 +352,16 @@ An individual video stream element
       },
 
       _shouldHideMuteMicButton: function(cameraStream) {
-        return !cameraStream.publisher || cameraStream.videoType === 'screen'
+        return cameraStream
+          && (!cameraStream.publisher || cameraStream.videoType === 'screen')
       },
 
       _shouldHideVideoButton: function(cameraStream) {
-        return !cameraStream.publisher || cameraStream.videoType === 'screen'
+        return cameraStream && (!cameraStream.publisher || cameraStream.videoType === 'screen')
       },
 
       _shouldHideScreenShareButton: function(cameraStream) {
-        return !Boolean(cameraStream.publisher)
+        return cameraStream && (!Boolean(cameraStream.publisher))
       }
     })
   </script>

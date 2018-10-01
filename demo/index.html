@@ -11,7 +11,7 @@
     <link rel="import" href="../../iron-demo-helpers/demo-pages-shared-styles.html">
     <link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
     <link rel="import" href="../smooth-opentok.html">
-    <link rel="import" href="../video-stream.html">
+    <link rel="import" href="../call-connection.html">
 
     <style is="custom-style" include="demo-pages-shared-styles">
     </style>
@@ -28,8 +28,21 @@
           </style>
           <smooth-opentok
             get-rtc-token-url="http://localhost:3001/credentials/demo-session"
-            users="{{users}}">
+            connections="{{connections}}">
           </smooth-opentok>
+
+          <template is="dom-repeat" items="{{connections}}">
+            <template is="dom-if" if="[[item.isConnected]]">
+              <call-connection
+                data-call-connection-id$="[[item.id]]"
+                connection="{{item}}"
+                principal$="[[!index]]"
+                principal-fullscreen$="[[item.principalFullScreen]]"
+                on-request-principal="_makePrincipal"
+                on-request-fullscreen-principal="_toggleFullscreenPrincipal">
+              </call-connection>
+            </template>
+          </template>
 
           <script>
             document.addEventListener('WebComponentsReady', e => {
