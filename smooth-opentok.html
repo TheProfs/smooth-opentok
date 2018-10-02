@@ -114,13 +114,14 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       },
 
       _handleConnectionDestroyed: function(connection) {
-        const i = this.connections.findIndex(c => c.id === connection.id)
+        const i = this._findConnectionIndexById(connection.id)
 
         this.splice('connections', i, 1)
       },
 
       _handleStreamCreated: function(stream, srcObject = undefined) {
-        const i = this.connections.findIndex(c => c.id === stream.connection.id)
+        const i = this._findConnectionIndexById(stream.connection.id)
+
         const connection = this.connections[i]
 
         this._ensureIPublishOnlyOneVideoStream(stream)
@@ -141,7 +142,7 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       },
 
       _handleStreamDestroyed: function(stream) {
-        const i = this.connections.findIndex(c => c.id === stream.connection.id)
+        const i = this._findConnectionIndexById(stream.connection.id)
         const connection = this.connections[i]
 
         this.set(`connections.${i}.streams.${stream.videoType}`, null)
@@ -153,7 +154,7 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       },
 
       _handleStreamPropertyChanged: function({ stream, changedProperty, newValue }) {
-        const i = this.connections.findIndex(c => c.id === stream.connection.id)
+        const i = this._findConnectionIndexById(stream.connection.id)
 
         this.set(
           `connections.${i}.streams.${stream.videoType}.${changedProperty}`,
@@ -262,7 +263,7 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
               subscriber.stream
             )
 
-            const i = this.connections.findIndex(c => c.id === stream.connection.id)
+            const i = this._findConnectionIndexById(stream.connection.id)
 
             this.set(
               `connections.${i}.streams.${stream.videoType}.srcObject`,
@@ -282,7 +283,7 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       _ensureIPublishOnlyOneVideoStream: function(stream) {
         if (!stream.hasVideo) return
 
-        const i = this.connections.findIndex(c => c.id === stream.connection.id)
+        const i = this._findConnectionIndexById(stream.connection.id)
 
         if (i === -1) return
 
@@ -378,6 +379,10 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
         const me = this._findMyConnection()
 
         return me ? !!me.streams.screen : false
+      },
+
+      _findConnectionIndexById: function(connectionId) {
+        return this.connections.findIndex(c => c.id === connectionId)
       }
     });
   </script>
