@@ -46,6 +46,12 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
           notify: true
         },
 
+        isStartingCall: {
+          type: Boolean,
+          value: false,
+          notify: true
+        },
+
         lastError: {
           type: Object,
           value: function() {
@@ -54,14 +60,22 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
           notify: true
         },
 
+        isSessionConnected: {
+          type: Boolean,
+          value: false,
+          notify: true
+        },
+
         noConnectionIsConnected: {
           type: Boolean,
-          computed: '_noConnectionIsConnected(connections.*)'
+          computed: '_noConnectionIsConnected(connections.*)',
+          notify: true
         },
 
         notInCallButOtherConnectionsInCall: {
           type: Boolean,
-          computed: '_notInCallButOtherConnectionsInCall(connections.*)'
+          computed: '_notInCallButOtherConnectionsInCall(connections.*)',
+          notify: true
         },
 
         getRtcTokenUrl: {
@@ -88,13 +102,6 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
             ]
           },
           observer: '_initScreensharing'
-        },
-
-        credentials: {
-          type: Object,
-          value: function() {
-            return undefined
-          }
         }
       },
 
@@ -105,12 +112,9 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       init: async function(credentials) {
         try {
           const creds = await this._fetchCredentials(this.getRtcTokenUrl)
+          const session = OT.initSession(creds.api_key, creds.session_id)
 
-          this.set('credentials', creds)
-          this.set('session', OT.initSession(
-            this.credentials.api_key,
-            this.credentials.session_id
-          ))
+          this.set('session', session)
 
           this.session.on('connectionCreated', e => {
             this._handleConnectionCreated(e.connection)
@@ -129,10 +133,12 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
           })
 
           this.session.on('streamPropertyChanged', e => {
-             this._handleStreamPropertyChanged(e)
+            this._handleStreamPropertyChanged(e)
           })
 
-          await this._connectToSession(this.session, this.credentials.token)
+          await this._connectToSession(this.session, creds.token)
+
+          this.set('isSessionConnected', true)
 
           this._handleSuccess()
         } catch(err) {
@@ -204,11 +210,15 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       },
 
       startCall: async function() {
+        this.set('isStartingCall', true)
+
         try {
           await this._createPublisher('camera')
-          this._subscribeToUnsubscribedStreams()
+          await this._subscribeToUnsubscribedStreams()
+          this.set('isStartingCall', false)
           this._handleSuccess()
         } catch(err) {
+          this.set('isStartingCall', false)
           this._handleError(err)
         }
       },
@@ -468,6 +478,7 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       _handleError: function(err) {
         this.fire('error', err)
         this.set('lastError', err)
+        console.error(err)
       }
     });
   </script>
