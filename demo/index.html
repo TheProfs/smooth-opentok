@@ -54,6 +54,13 @@
                 .init()
                 .then(console.log)
                 .catch(console.error)
+
+              document.querySelector('smooth-opentok').addEventListener(
+                'connection-with-stream-added-but-i-am-not-in-call',
+                e => {
+                  console.log('connection-with-stream-added-but-i-am-not-in-call')
+                }
+              )
             })
           </script>
         </template>

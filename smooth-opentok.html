@@ -54,6 +54,16 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
           notify: true
         },
 
+        noConnectionIsConnected: {
+          type: Boolean,
+          computed: '_noConnectionIsConnected(connections.*)'
+        },
+
+        notInCallButOtherConnectionsInCall: {
+          type: Boolean,
+          computed: '_notInCallButOtherConnectionsInCall(connections.*)'
+        },
+
         getRtcTokenUrl: {
           type: String
         },
@@ -154,6 +164,7 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
           ...stream,
           srcObject
         })
+
         this.set(`connections.${i}.isConnected`,
           connection.isMe
           ? true
@@ -162,6 +173,10 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
 
         if (this._isInCall()) {
           this._subscribeToUnsubscribedStreams()
+        }
+
+        if (this._notInCallButOtherConnectionsInCall()) {
+          this.fire('connection-with-stream-added-but-i-am-not-in-call')
         }
       },
 
@@ -333,8 +348,7 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
             videoSource: videoSource === 'camera' ? undefined : videoSource,
             publishVideo: videoSource === 'camera' ? false : undefined,
             audioSource: videoSource === 'screen' ? false : undefined,
-            insertDefaultUI: false,
-            name: this.idCallParticipant
+            insertDefaultUI: false
           }, err => {
             if (err) return reject(err)
           })
@@ -415,6 +429,20 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
 
       _findConnectionIndexById: function(connectionId) {
         return this.connections.findIndex(c => c.id === connectionId)
+      },
+
+      _noConnectionIsConnected: function() {
+        return this.connections.every(c => !c.isConnected)
+      },
+
+      _notInCallButOtherConnectionsInCall: function() {
+        const me = this.connections.find(c => c.isMe)
+        const others = this.connections.filter(c => !c.isMe)
+        const othersHaveStreams = others.some(other =>
+          Object.values(other.streams).some(stream => stream)
+        )
+
+        return me && !me.isConnected && othersHaveStreams
       },
 
       _handleSuccess: function() {
