@@ -1,4 +1,5 @@
 <link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="ot-human-error.html">
 
 <script src="https://static.opentok.com/v2/js/opentok.min.js"></script>
 <script src="classes/call-connection.js"></script>
@@ -11,7 +12,20 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
 -->
 
 <dom-module id="smooth-opentok">
-  <template></template>
+  <template>
+    <style is="custom-style">
+      ot-human-error {
+        color: #D50000;
+      }
+    </style>
+
+    <p>
+      <ot-human-error
+        last-error="[[lastError]]"
+        hidden$="[[!lastError]]">
+      </ot-human-error>
+    </p>
+  </template>
 
   <script>
     Polymer({
@@ -29,6 +43,14 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
 
         session: {
           type: Object,
+          notify: true
+        },
+
+        lastError: {
+          type: Object,
+          value: function() {
+            return false
+          },
           notify: true
         },
 
@@ -99,6 +121,8 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
           })
 
           await this._connectToSession(this.session, this.credentials.token)
+
+          this._handleSuccess()
         } catch(err) {
           this._handleError(err)
         }
@@ -165,13 +189,10 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
       startCall: async function() {
         try {
           await this._createPublisher('camera')
-
-          if (this._isInCall()) {
-            this._subscribeToUnsubscribedStreams()
-          }
+          this._subscribeToUnsubscribedStreams()
+          this._handleSuccess()
         } catch(err) {
-          // @TODO error handling
-          console.error(err)
+          this._handleError(err)
         }
       },
 
@@ -193,11 +214,17 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
         })
       },
 
-      toggleScreenShare: function(flag) {
-        if (this._isScreenSharing()) {
-          return this._stopScreenSharing()
-        } else {
-          return this._startScreenSharing()
+      toggleScreenShare: async function(flag) {
+        try {
+          if (this._isScreenSharing()) {
+            await this._stopScreenSharing()
+          } else {
+            await this._startScreenSharing()
+          }
+
+          this._handleSuccess()
+        } catch (err) {
+          this._handleError(err)
         }
       },
 
@@ -254,7 +281,10 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
             insertDefaultUI: false
           }, err => {
             if (err) {
-              return reject(err)
+              this._handleError(err)
+              reject(err)
+
+              return
             }
           })
 
@@ -274,6 +304,8 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
               subscribers.length ? subscribers[0] : undefined
             )
             this.set(`connections.${i}.isConnected`, true)
+
+            this._handleSuccess()
 
             resolve(stream)
           })
@@ -383,6 +415,15 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
 
       _findConnectionIndexById: function(connectionId) {
         return this.connections.findIndex(c => c.id === connectionId)
+      },
+
+      _handleSuccess: function() {
+        this.set('lastError', false)
+      },
+
+      _handleError: function(err) {
+        this.fire('error', err)
+        this.set('lastError', err)
       }
     });
   </script>
