@@ -104,7 +104,9 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
 
       init: async function(credentials) {
         try {
-          this.set('credentials', await this._fetchCredentials(this.getRtcTokenUrl))
+          const creds = await this._fetchCredentials(this.getRtcTokenUrl)
+
+          this.set('credentials', creds)
           this.set('session', OT.initSession(
             this.credentials.api_key,
             this.credentials.session_id
@@ -300,6 +302,20 @@ Opentok&#39;s API wrapped as a Polymer element for sane humans
               reject(err)
 
               return
+            }
+          })
+
+          subscriber.on('videoDisabled', e => {
+            if (e.reason === 'quality') {
+              const i = this._findConnectionIndexById(e.target.stream.connection.id)
+              this.set(`connections.${i}.videoDisabledDueToQuality`, true)
+            }
+          })
+
+          subscriber.on('videoEnabled', e => {
+            if (e.reason === 'quality') {
+              const i = this._findConnectionIndexById(e.target.stream.connection.id)
+              this.set(`connections.${i}.videoDisabledDueToQuality`, false)
             }
           })
 
