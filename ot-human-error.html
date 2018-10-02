@@ -1,0 +1,72 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<!--
+`ot-human-error`
+
+Displays OpenTok errors in a human readable form
+-->
+
+<dom-module id="ot-human-error">
+  <template>
+    <style>
+      :host {
+        display: inline-block;
+      }
+    </style>
+
+    [[humanReadableError]]
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'ot-human-error',
+
+      properties: {
+        lastError: {
+          type: Object
+        },
+
+        humanReadableError: {
+          type: String,
+          computed: '_errToHumanReadable(lastError)'
+        },
+
+        errs: {
+          type: Array,
+          value: function() {
+            return [
+              {
+                name: 'OT_TIMEOUT',
+                message: 'Cannot connect to call. Please check your internet connection.'
+              },
+
+              {
+                name: 'OT_USER_MEDIA_ACCESS_DENIED',
+                message: 'You need to allow access to your device. If you previously blocked access you need to re-enable permissions via your browser settings and reload this page.'
+              },
+
+              {
+                name: 'OT_NO_DEVICES_FOUND',
+                message: 'No audio/video devices found. If you previously blocked access you need to re-enable permissions via your browser settings and reload this page.'
+              }
+            ]
+          },
+          readOnly: true
+        }
+      },
+
+      ready: function() {
+        window.lastError = this
+      },
+
+      _errToHumanReadable: function(lastError) {
+        if (!lastError.hasOwnProperty('code')) return lastError.toString()
+
+        const found = this.errs.find(err => err.name === lastError.name)
+
+        return found ? found.message : lastError.toString()
+      }
+    })
+  </script>
+</dom-module>
